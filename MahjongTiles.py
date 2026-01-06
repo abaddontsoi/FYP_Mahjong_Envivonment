@@ -26,13 +26,13 @@ tile_classes = {
     25: ('7s', '\U0001F016'), 
     26: ('8s', '\U0001F017'), 
     27: ('9s', '\U0001F018'), 
-    28: ('East', '\U0001F000'), 
-    29: ('South', '\U0001F001'), 
-    30: ('West', '\U0001F002'), 
-    31: ('North', '\U0001F003'),
-    32: ('White', '\U0001F006'), 
-    33: ('Green', '\U0001F005'), 
-    34: ('Red', '\U0001F004\uFE0E')
+    28: ('1z', '\U0001F000'), 
+    29: ('2z', '\U0001F001'), 
+    30: ('3z', '\U0001F002'), 
+    31: ('4z', '\U0001F003'),
+    32: ('5z', '\U0001F006'), 
+    33: ('6z', '\U0001F005'), 
+    34: ('7z', '\U0001F004\uFE0E')
 }
 
 
@@ -40,6 +40,8 @@ class MahjongTiles:
     def __init__(self, classId: int):
         self.classId = classId
         self.tile_class_info = tile_classes[self.classId]
+        self.tile_suit = self.tile_class_info[0][1]
+        self.tile_number = int(self.tile_class_info[0][0])
 
     def print_tile(self):
         print(self.tile_class_info[1])

@@ -78,6 +78,7 @@ class MahjongEnv:
             if call_response:
                 call_queues[call_response].append(temp_current_player)
 
+        action_taken = False        
         # Check if any player is to win
         if call_queues['win']:
             self.end_round = True
@@ -85,35 +86,42 @@ class MahjongEnv:
                 self.players[i].win(self.discard_buffer)
 
         # Check if any player is to kong
-        if call_queues['kong']:
+        elif call_queues['kong']:
+            # Player id
+            action_player = call_queues['kong'][0]
             # Move the tile to player's hand
-            self.players[call_queues['kong'][0]].kong(self.discard_buffer)
+            self.players[action_player].kong(self.discard_buffer)
             self.discard_buffer = None
             # Draw 1 tile
-            self.players[call_queues['kong'][0]].draw_tiles([self.deck.pop(0)])
-            # Discard
-            self.discard_buffer = self.players[call_queues['kong'][0]].discard()
-            self.current_player = call_queues['kong'][0]
-            self.pool_for_call()
+            self.players[action_player].draw_tiles([self.deck.pop(0)])
+            action_taken = True
 
         # Check if any player is to pong
-        if call_queues['pong']:
+        elif call_queues['pong']:
+            action_player = call_queues['pong'][0]
             # Move the tile to player's hand
-            self.players[call_queues['pong'][0]].pong(self.discard_buffer)
+            self.players[action_player].pong(self.discard_buffer)
             self.discard_buffer = None
-            # Discard
-            self.discard_buffer = self.players[call_queues['pong'][0]].discard()
-            self.current_player = call_queues['pong'][0]
-            self.pool_for_call()
+            action_taken = True
 
         # Check if any player is to chow
-        if call_queues['chow']:
+        elif call_queues['chow']:
+            action_player = call_queues['chow'][0]
             # Move the tile to player's hand
-            self.players[call_queues['chow'][0]].chow(self.discard_buffer)
+            self.players[action_player].chow(self.discard_buffer)
             self.discard_buffer = None
+            action_taken = True
+
+        if action_taken:
             # Discard
-            self.discard_buffer = self.players[call_queues['chow'][0]].discard()
-            self.current_player = call_queues['chow'][0]
+            self.discard_buffer = self.players[action_player].discard()
+            self.current_player = action_player
+            call_queues = {
+                'win': [],
+                'kong': [],
+                'pong': [],
+                'chow': []
+            }
             self.pool_for_call()
         
         if self.discard_buffer:
