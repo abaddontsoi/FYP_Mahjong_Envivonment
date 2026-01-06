@@ -5,19 +5,22 @@ import BotPlayer, Player
 class MahjongEnv:
     def __init__(self, real_player = False):
         self.deck = []
-        self._generate_tiles()
         self._reset()
-        self.wind = 0
-        self.round = 0
+        self.wind = -1
+        self.round = -1
         self.players = []
         self.real_player = real_player
+        self.end_round = False
         self.end_game = False
         self.current_player = 0
         self.discard_pool = []
         self.min_faan = 3
         self.max_faan = 10
+        self.discard_buffer = None
 
     def _generate_tiles(self):
+        # Clear deck
+        self.deck = []
         # Create tiles
         for key, value in MahjongTiles.tile_classes.items():
             for _ in range(4):
@@ -38,41 +41,135 @@ class MahjongEnv:
 
     def add_players(self):
         if not self.real_player:
-            self.players = [BotPlayer.BotPlayer() for _ in range(4)]
+            self.players = [BotPlayer.BotPlayer(i) for i in range(4)]
         else:
-            self.players = [BotPlayer.BotPlayer() for _ in range(3)]
-            self.players.append(Player.Player())
-            random.shuffle(self.players)
+            self.players = [BotPlayer.BotPlayer(i) for i in range(3)]
+            self.players.append(Player.Player(3))
+        
+        random.shuffle(self.players)
         print(f'Total initialized players: {len(self.players)}')
 
     def game_state_check(self):
-        if len(self.deck) == 0:
+        # Check if this round is last round of the game
+        if self.wind == 3 and self.round == 3:
             self.end_game = True
             return
+    
+        # Update round and wind info
+        self.round += 1
+        self.round %= 4
+        if self.round == 0:
+            self.wind += 1
+            self.wind %= 4
 
+    def pool_for_call(self):
+        temp_current_player = self.current_player
+        # Pool all players to see if they can call or not
+        call_queues = {
+            'win': [],
+            'kong': [],
+            'pong': [],
+            'chow': []
+        }
+        for i in range(3):
+            temp_current_player += 1
+            temp_current_player %= 4
+            call_response = self.players[temp_current_player].call_response(self.discard_buffer, i==0)
+            if call_response:
+                call_queues[call_response].append(temp_current_player)
+
+        # Check if any player is to win
+        if call_queues['win']:
+            self.end_round = True
+            for i in call_queues['win']:
+                self.players[i].win(self.discard_buffer)
+
+        # Check if any player is to kong
+        if call_queues['kong']:
+            # Move the tile to player's hand
+            self.players[call_queues['kong'][0]].kong(self.discard_buffer)
+            self.discard_buffer = None
+            # Draw 1 tile
+            self.players[call_queues['kong'][0]].draw_tiles([self.deck.pop(0)])
+            # Discard
+            self.discard_buffer = self.players[call_queues['kong'][0]].discard()
+            self.current_player = call_queues['kong'][0]
+            self.pool_for_call()
+
+        # Check if any player is to pong
+        if call_queues['pong']:
+            # Move the tile to player's hand
+            self.players[call_queues['pong'][0]].pong(self.discard_buffer)
+            self.discard_buffer = None
+            # Discard
+            self.discard_buffer = self.players[call_queues['pong'][0]].discard()
+            self.current_player = call_queues['pong'][0]
+            self.pool_for_call()
+
+        # Check if any player is to chow
+        if call_queues['chow']:
+            # Move the tile to player's hand
+            self.players[call_queues['chow'][0]].chow(self.discard_buffer)
+            self.discard_buffer = None
+            # Discard
+            self.discard_buffer = self.players[call_queues['chow'][0]].discard()
+            self.current_player = call_queues['chow'][0]
+            self.pool_for_call()
+        
+        if self.discard_buffer:
+            self.discard_pool.append(self.discard_buffer)
+            self.discard_buffer = None
+
+    def round_state_check(self):
+        self.pool_for_call()
+
+        if len(self.deck) == 0:
+            self.end_round = True
+            return
+        
+        self.current_player += 1
+        self.current_player %= 4
+
+
+    def round_reset(self):
+        # Clear players' hand
+        for player in self.players:
+            player.clear_hand()
+
+        self.end_round = False
+        self._generate_tiles()
+        self.discard_pool = []
+        self.discard_buffer = None
+
+        # Shift players play order
+        self.players.append(self.players[0])
+        self.players.pop()
+        self.game_state_check()
+    
     def start_game(self):
         if len(self.players) != 4:
             raise ValueError
         
-        for i in range(4):
-            drawn_tiles = self.deck[:13]
-            self.deck = self.deck[13:]
-            self.players[i].draw_tiles(drawn_tiles)
-
-        for i in range(4):
-            print(f"Player {i+1}: ", end='')
-            self.players[i].display_hand()
-            print()
-        print(f"{len(self.deck)} tiles in deck.")
-
         while not self.end_game:
-            
+            # Reset each round
             print("="*40)
-            self.players[self.current_player].draw_tiles([self.deck.pop()])
-            current_player_discard = self.players[self.current_player].discard()
-            self.discard_pool.append(current_player_discard)
-            print(f"Player {self.current_player} discards {current_player_discard.tile_class_info[1]} ")
+            self.round_reset()
+            winds = ['East', 'South', 'West', 'North']
+            print(f"{winds[self.wind]} Wind {self.round + 1} Round")
+            for i in range(4):
+                drawn_tiles = self.deck[:13]
+                self.deck = self.deck[13:]
+                self.players[i].draw_tiles(drawn_tiles)
 
-            self.game_state_check()
-            self.current_player += 1
-            self.current_player %= 4
+            for i in range(4):
+                print(f"Player {i+1}: ", end='')
+                self.players[i].display_hand()
+                print()
+            print(f"{len(self.deck)} tiles in deck.")
+
+            while not self.end_round:
+                self.players[self.current_player].draw_tiles([self.deck.pop()])
+                self.discard_buffer = self.players[self.current_player].discard()
+                print(f"Player {self.players[self.current_player].id} discards {self.discard_buffer.tile_class_info[1]} ")
+
+                self.round_state_check()
