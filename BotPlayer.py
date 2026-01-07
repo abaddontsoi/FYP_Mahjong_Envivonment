@@ -16,3 +16,6 @@ class BotPlayer(Player.Player):
         # 'pong'
         # 'chow'
         return False
+    
+    def display_hand(self):
+        return

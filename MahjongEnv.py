@@ -49,6 +49,12 @@ class MahjongEnv:
         random.shuffle(self.players)
         print(f'Total initialized players: {len(self.players)}')
 
+    def request_player_discard(self, current_player):
+        self.discard_buffer = self.players[current_player].discard()
+        # Push discard pool and buffer to players
+        for player in self.players:
+            player.receive_discarded(self.discard_pool, self.discard_buffer)
+
     def game_state_check(self):
         # Check if this round is last round of the game
         if self.wind == 3 and self.round == 3:
@@ -75,7 +81,7 @@ class MahjongEnv:
             temp_current_player += 1
             temp_current_player %= 4
             call_response = self.players[temp_current_player].call_response(self.discard_buffer, i==0)
-            if call_response:
+            if call_response and call_response != 'pass':
                 call_queues[call_response].append(temp_current_player)
 
         action_taken = False        
@@ -114,7 +120,8 @@ class MahjongEnv:
 
         if action_taken:
             # Discard
-            self.discard_buffer = self.players[action_player].discard()
+            self.request_player_discard(action_player)
+            # self.discard_buffer = self.players[action_player].discard()
             self.current_player = action_player
             call_queues = {
                 'win': [],
@@ -148,7 +155,10 @@ class MahjongEnv:
         self._generate_tiles()
         self.discard_pool = []
         self.discard_buffer = None
-
+        
+        for player in self.players:
+            player.clear_current_discard_pool()
+        
         # Shift players play order
         self.players.append(self.players[0])
         self.players.pop()
@@ -169,15 +179,15 @@ class MahjongEnv:
                 self.deck = self.deck[13:]
                 self.players[i].draw_tiles(drawn_tiles)
 
-            for i in range(4):
-                print(f"Player {i+1}: ", end='')
-                self.players[i].display_hand()
-                print()
+            # for i in range(4):
+            #     print(f"Player {i+1}: ", end='')
+            #     self.players[i].display_hand()
+            #     print()
             print(f"{len(self.deck)} tiles in deck.")
 
             while not self.end_round:
                 self.players[self.current_player].draw_tiles([self.deck.pop()])
-                self.discard_buffer = self.players[self.current_player].discard()
-                print(f"Player {self.players[self.current_player].id} discards {self.discard_buffer.tile_class_info[1]} ")
+                self.request_player_discard(self.current_player)
+                # print(f"Player {self.players[self.current_player].id} discards {self.discard_buffer.tile_class_info[1]} ")
 
                 self.round_state_check()
