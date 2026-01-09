@@ -45,7 +45,7 @@ class MahjongEnv:
         self.round = 0
         self.current_player = 0
 
-    def view_deck(self):
+    def _view_deck(self):
         for tile in self.deck:
             tile.print_tile()
 
@@ -67,9 +67,6 @@ class MahjongEnv:
 
     def request_player_discard(self, current_player):
         self.discard_buffer = self.players[current_player].discard()
-        # Push discard pool and buffer to players
-        for player in self.players:
-            player.receive_discarded(self.discard_pool, self.discard_buffer)
 
     def game_state_check(self):
         # Check if this round is last round of the game
@@ -172,9 +169,6 @@ class MahjongEnv:
         self.discard_pool = []
         self.discard_buffer = None
         
-        for player in self.players:
-            player.clear_current_discard_pool()
-        
         # Shift players play order
         self.players.append(self.players[0])
         self.players.pop()
@@ -190,15 +184,12 @@ class MahjongEnv:
             self.round_reset()
             winds = ['East', 'South', 'West', 'North']
             print(f"{winds[self.wind]} Wind {self.round + 1} Round")
+            
             for i in range(4):
                 drawn_tiles = self.deck[:13]
                 self.deck = self.deck[13:]
                 self.players[i].draw_tiles(drawn_tiles)
 
-            # for i in range(4):
-            #     print(f"Player {i+1}: ", end='')
-            #     self.players[i].display_hand()
-            #     print()
             print(f"{len(self.deck)} tiles in deck.")
 
             while not self.end_round:

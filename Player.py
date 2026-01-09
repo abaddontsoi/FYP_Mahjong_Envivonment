@@ -8,8 +8,6 @@ class Player:
         self.id = id
         self.called_tuples = []
         self.round_position = -1
-        self.current_discard_pool = []
-        self.current_discard_buffer = None
 
     def assign_env(self, env: MahjongEnv):
         self.game_env(env)
@@ -17,6 +15,10 @@ class Player:
     def draw_tiles(self, tiles: list[MahjongTiles.MahjongTiles]):
         self.hand += tiles
         self.hand.sort(key=lambda x: x.classId)
+
+        self.additional_kong()
+        self.hidden_kong()
+        self.self_drawn()
 
     def display_hand(self):
         print(self.get_hand_as_string())
@@ -49,11 +51,22 @@ class Player:
             tuples_as_string.append(' '.join(temp))
         return '\n'.join(tuples_as_string)
 
+    def check_tuple_type(self, tuple: tuple[MahjongTiles.MahjongTiles]):
+        if len(tuple) == 4:
+            return 'kong'
+        if len(tuple) == 3:
+            if tuple[0].classId == tuple[1].classId == tuple[2].classId:
+                return 'pong'
+            if tuple[2].tile_number == tuple[1].tile_number + 1 and tuple[1].tile_number == tuple[1].tile_number + 1:
+                return 'chow'
+        
+        return None
+
     def safe_get_option(self, options: list, prompt: str):
         while True:
             try:
                 idx = int(input(prompt))
-                if not 0 <= idx < len(options):
+                if idx >= len(options):
                     raise IndexError("Index out of range.")
                 return options.pop(idx)
             except ValueError:
@@ -65,14 +78,6 @@ class Player:
         self.display_current_discards()
         self.display_hand()
         return self.safe_get_option(self.hand, "Input index to discard: ")
-    
-    def receive_discarded(self, discard_pool: list[MahjongTiles.MahjongTiles], discard_buffer: MahjongTiles.MahjongTiles):
-        self.current_discard_pool = discard_pool
-        self.current_discard_buffer = discard_buffer
-
-    def clear_current_discard_pool(self):
-        self.current_discard_buffer = None
-        self.current_discard_pool = []
 
     def clear_hand(self):
         self.hand = []
@@ -150,6 +155,9 @@ class Player:
     def win(self, call_tile: MahjongTiles.MahjongTiles):
         pass
     
+    def self_drawn(self):
+        ...
+
     def kong(self, call_tile: MahjongTiles.MahjongTiles):
         call_tile_id = call_tile.classId
         kong_tiles = [t for t in self.hand if t.classId == call_tile_id]
@@ -159,11 +167,26 @@ class Player:
         self.called_tuples.append(tuple(kong_tiles))
     
     def additional_kong(self):
-        ...
+        self.display_hand()
+        available_options = []
+        kong_tile_idx = None
+        for tile_idx, tile in enumerate(self.hand):
+            for idx, tuple in enumerate(self.called_tuples):
+                if tuple[0].classId == tile.classId and self.check_tuple_type(tuple) == 'pong':
+                    # Possible additional kong exists
+                    available_options.append('kong')
+                    available_options.append('pass')
+                    option = self.safe_get_option(available_options, f"{str(available_options)}: ")
+                    if option == 'kong':
+                        self.called_tuples[idx] = (*tuple, tile)
+                        kong_tile_idx = tile_idx
+                    break
+        if kong_tile_idx:
+            self.hand.pop(kong_tile_idx)
     
     def hidden_kong(self):
         ...
-    
+
     def pong(self, call_tile: MahjongTiles.MahjongTiles):
         call_tile_id = call_tile.classId
         pong_tiles = [t for t in self.hand if t.classId == call_tile_id]
@@ -206,7 +229,7 @@ class Player:
         if len(chow_options) > 1:
             for idx, option in enumerate(chow_options):
                 print(f"[{idx}] {str(self.hand[option[1]])} {str(self.hand[option[0]])}")
-            chow_selection = int(input(f"Choose chow combination: "))
+            chow_selection = self.safe_get_option(chow_options, "Choose chow combination: ")
         else:
             chow_selection = 0
         chow_tiles = [t for idx, t in enumerate(self.hand) if idx in chow_options[chow_selection]]
