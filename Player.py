@@ -1,13 +1,18 @@
 import MahjongTiles
+import MahjongEnv
 
 class Player:
-    def __init__(self, id = None):
+    def __init__(self, env: MahjongEnv, id = None):
         self.hand = []
+        self.game_env = env
         self.id = id
         self.called_tuples = []
         self.round_position = -1
         self.current_discard_pool = []
         self.current_discard_buffer = None
+
+    def assign_env(self, env: MahjongEnv):
+        self.game_env(env)
 
     def draw_tiles(self, tiles: list[MahjongTiles.MahjongTiles]):
         self.hand += tiles
@@ -18,21 +23,19 @@ class Player:
         print(self.get_called_tuples_as_string())
 
     def display_current_discards(self):
-        discard_pool = self.current_discard_pool
-        # if self.current_discard_buffer:
-        #     discard_pool.append(self.current_discard_buffer)
+        discard_pool = self.game_env.get_pool_and_buffer()
         
         if not discard_pool:
             return 
         
         print("="*20 + "Discard Pool" + "="*20)
-        counter = 5
+        counter = 10
         for tile in discard_pool:
             print(tile.tile_class_info[1], end=' ')
             counter -= 1
             if counter == 0:
                 print()
-                counter = 5
+                counter = 10
         print()
         print("=" * 50)
 
@@ -46,11 +49,22 @@ class Player:
             tuples_as_string.append(' '.join(temp))
         return '\n'.join(tuples_as_string)
 
+    def safe_get_option(self, options: list, prompt: str):
+        while True:
+            try:
+                idx = int(input(prompt))
+                if not 0 <= idx < len(options):
+                    raise IndexError("Index out of range.")
+                return options.pop(idx)
+            except ValueError:
+                print("Invalid input, try again.")
+            except IndexError:
+                print("Index out of range, try again.")
+
     def discard(self):
         self.display_current_discards()
         self.display_hand()
-        discard_idx = int(input("Input index to discard: "))
-        return self.hand.pop(discard_idx)
+        return self.safe_get_option(self.hand, "Input index to discard: ")
     
     def receive_discarded(self, discard_pool: list[MahjongTiles.MahjongTiles], discard_buffer: MahjongTiles.MahjongTiles):
         self.current_discard_pool = discard_pool
@@ -68,6 +82,7 @@ class Player:
         available_actions = []
         # Put those selected mahjong tiles to self.called_tuples, responses are: 
         # 'win'
+
         # 'kong'
         call_tile_id = call_tile.classId
         count = 0
@@ -119,9 +134,9 @@ class Player:
         # Choose action
         if available_actions:
             available_actions.append('pass')
+            self.display_current_discards()
             self.display_hand()
-            action = int(input(f"{str(available_actions)}: "))
-            return available_actions[action]
+            return self.safe_get_option(available_actions, f"{str(available_actions)}: ")
         
         return False
     
@@ -187,10 +202,13 @@ class Player:
                             same_suit_tiles[i - 1]
                         )
                     )
-        for idx, option in enumerate(chow_options):
-            print(f"[{idx}] {self.hand[option[0]].tile_class_info[1]} {self.hand[option[1]].tile_class_info[1]}")
-
-        chow_selection = int(input(f"Choose chow combination: "))
+        chow_selection = 0
+        if len(chow_options) > 1:
+            for idx, option in enumerate(chow_options):
+                print(f"[{idx}] {str(self.hand[option[1]])} {str(self.hand[option[0]])}")
+            chow_selection = int(input(f"Choose chow combination: "))
+        else:
+            chow_selection = 0
         chow_tiles = [t for idx, t in enumerate(self.hand) if idx in chow_options[chow_selection]]
         self.hand = [t for idx, t in enumerate(self.hand) if idx not in chow_options[chow_selection]]
         chow_tiles.append(call_tile)

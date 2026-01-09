@@ -1,9 +1,10 @@
+import MahjongEnv
 import Player
 import MahjongTiles
 import random
 
 class BotPlayer(Player.Player):
-    def __init__(self, id):
+    def __init__(self, env: MahjongEnv, id = None):
         super().__init__(id)
 
     def discard(self):

@@ -45,3 +45,6 @@ class MahjongTiles:
 
     def print_tile(self):
         print(self.tile_class_info[1])
+
+    def __str__(self):
+        return self.tile_class_info[1]

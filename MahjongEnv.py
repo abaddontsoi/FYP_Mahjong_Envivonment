@@ -3,7 +3,17 @@ import random
 import BotPlayer, Player
 
 class MahjongEnv:
+    _instance = None
+    
+    def __new__(cls, real_player=False):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._initialized = False  # Guard flag
+        return cls._instance
+    
     def __init__(self, real_player = False):
+        if self._initialized:
+            return  # Skip init on subsequent calls
         self.deck = []
         self._reset()
         self.wind = -1
@@ -41,13 +51,19 @@ class MahjongEnv:
 
     def add_players(self):
         if not self.real_player:
-            self.players = [BotPlayer.BotPlayer(i) for i in range(4)]
+            self.players = [BotPlayer.BotPlayer(self._instance, i) for i in range(4)]
         else:
-            self.players = [BotPlayer.BotPlayer(i) for i in range(3)]
-            self.players.append(Player.Player(3))
+            self.players = [BotPlayer.BotPlayer(self._instance, i) for i in range(3)]
+            self.players.append(Player.Player(self._instance, 3))
         
         random.shuffle(self.players)
         print(f'Total initialized players: {len(self.players)}')
+
+    def get_pool_and_buffer(self):
+        discard_pool = self.discard_pool
+        if self.discard_buffer:
+            discard_pool.append(self.discard_buffer)
+        return discard_pool
 
     def request_player_discard(self, current_player):
         self.discard_buffer = self.players[current_player].discard()
