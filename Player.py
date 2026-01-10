@@ -167,13 +167,13 @@ class Player:
         self.called_tuples.append(tuple(kong_tiles))
     
     def additional_kong(self):
-        self.display_hand()
         available_options = []
         kong_tile_idx = None
         for tile_idx, tile in enumerate(self.hand):
             for idx, tuple in enumerate(self.called_tuples):
                 if tuple[0].classId == tile.classId and self.check_tuple_type(tuple) == 'pong':
                     # Possible additional kong exists
+                    self.display_hand()
                     available_options.append('kong')
                     available_options.append('pass')
                     option = self.safe_get_option(available_options, f"{str(available_options)}: ")
@@ -229,9 +229,7 @@ class Player:
         if len(chow_options) > 1:
             for idx, option in enumerate(chow_options):
                 print(f"[{idx}] {str(self.hand[option[1]])} {str(self.hand[option[0]])}")
-            chow_selection = self.safe_get_option(chow_options, "Choose chow combination: ")
-        else:
-            chow_selection = 0
+            chow_selection = self.safe_get_option([i for i in range(len(chow_options))], "Choose chow combination: ")
         chow_tiles = [t for idx, t in enumerate(self.hand) if idx in chow_options[chow_selection]]
         self.hand = [t for idx, t in enumerate(self.hand) if idx not in chow_options[chow_selection]]
         chow_tiles.append(call_tile)

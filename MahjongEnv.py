@@ -142,6 +142,9 @@ class MahjongEnv:
                 'pong': [],
                 'chow': []
             }
+            if self.discard_buffer:
+                self.discard_pool.append(self.discard_buffer)
+                self.discard_buffer = None
             self.pool_for_call()
         
         if self.discard_buffer:
@@ -184,7 +187,7 @@ class MahjongEnv:
             self.round_reset()
             winds = ['East', 'South', 'West', 'North']
             print(f"{winds[self.wind]} Wind {self.round + 1} Round")
-            
+
             for i in range(4):
                 drawn_tiles = self.deck[:13]
                 self.deck = self.deck[13:]
