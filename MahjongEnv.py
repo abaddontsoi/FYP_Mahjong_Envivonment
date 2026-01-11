@@ -61,8 +61,10 @@ class MahjongEnv:
 
     def get_pool_and_buffer(self):
         discard_pool = self.discard_pool
+        
         if self.discard_buffer:
-            discard_pool.append(self.discard_buffer)
+            return discard_pool + [self.discard_buffer]
+        
         return discard_pool
 
     def request_player_discard(self, current_player):
@@ -134,22 +136,13 @@ class MahjongEnv:
         if action_taken:
             # Discard
             self.request_player_discard(action_player)
-            # self.discard_buffer = self.players[action_player].discard()
             self.current_player = action_player
-            call_queues = {
-                'win': [],
-                'kong': [],
-                'pong': [],
-                'chow': []
-            }
+            self.discard_buffer = None
+            self.pool_for_call()
+        else:
             if self.discard_buffer:
                 self.discard_pool.append(self.discard_buffer)
                 self.discard_buffer = None
-            self.pool_for_call()
-        
-        if self.discard_buffer:
-            self.discard_pool.append(self.discard_buffer)
-            self.discard_buffer = None
 
     def round_state_check(self):
         self.pool_for_call()
@@ -198,6 +191,4 @@ class MahjongEnv:
             while not self.end_round:
                 self.players[self.current_player].draw_tiles([self.deck.pop()])
                 self.request_player_discard(self.current_player)
-                # print(f"Player {self.players[self.current_player].id} discards {self.discard_buffer.tile_class_info[1]} ")
-
                 self.round_state_check()

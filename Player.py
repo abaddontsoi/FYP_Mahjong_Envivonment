@@ -106,7 +106,7 @@ class Player:
             available_actions.append('pong')
         
         # 'chow'
-        if call_tile.tile_suit != 'z': # 'z' suit not allow to 'chow'
+        if call_tile.tile_suit != 'z' and chow_allowed: # 'z' suit not allow to 'chow'
             same_suit_tiles_idx = []
             for i in range(len(self.hand)):
                 if self.hand[i].tile_suit != call_tile.tile_suit:
@@ -183,6 +183,7 @@ class Player:
                     break
         if kong_tile_idx:
             self.hand.pop(kong_tile_idx)
+            self.draw_tiles([self.game_env.deck.pop(0)])
     
     def hidden_kong(self):
         ...
