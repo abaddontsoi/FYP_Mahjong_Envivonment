@@ -53,11 +53,12 @@ class Player:
 
     def check_tuple_type(self, tuple: tuple[MahjongTiles.MahjongTiles]):
         if len(tuple) == 4:
-            return 'kong'
+            if tuple[0].classId == tuple[1].classId == tuple[2].classId == tuple[3].classId:
+                return 'kong'
         if len(tuple) == 3:
             if tuple[0].classId == tuple[1].classId == tuple[2].classId:
                 return 'pong'
-            if tuple[2].tile_number == tuple[1].tile_number + 1 and tuple[1].tile_number == tuple[1].tile_number + 1:
+            if tuple[2].tile_number == tuple[1].tile_number + 1 and tuple[1].tile_number == tuple[0].tile_number + 1:
                 return 'chow'
         
         return None
@@ -186,7 +187,19 @@ class Player:
             self.draw_tiles([self.game_env.deck.pop(0)])
     
     def hidden_kong(self):
-        ...
+        if len(self.hand) >= 4:
+            for idx in range(3, len(self.hand)):
+                tuple = (self.hand[idx], self.hand[idx - 1], self.hand[idx - 2], self.hand[idx - 3])
+                tuple_type = self.check_tuple_type(tuple)
+                if tuple_type == 'kong':
+                    available_options = ['kong', 'pass']
+                    option = self.safe_get_option(available_options, f"{available_options}: ")
+                    if option == 'kong':
+                        self.called_tuples.append(tuple)
+                        for tile in reversed(tuple):
+                            self.hand.remove(tile)
+                        self.draw_tiles([self.game_env.deck.pop(0)])
+                    break
 
     def pong(self, call_tile: MahjongTiles.MahjongTiles):
         call_tile_id = call_tile.classId

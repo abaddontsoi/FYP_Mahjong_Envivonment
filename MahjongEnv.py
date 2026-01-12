@@ -1,6 +1,6 @@
 import MahjongTiles
 import random
-import BotPlayer, Player
+
 
 class MahjongEnv:
     _instance = None
@@ -49,13 +49,13 @@ class MahjongEnv:
         for tile in self.deck:
             tile.print_tile()
 
-    def add_players(self):
-        if not self.real_player:
-            self.players = [BotPlayer.BotPlayer(self._instance, i) for i in range(4)]
-        else:
-            self.players = [BotPlayer.BotPlayer(self._instance, i) for i in range(3)]
-            self.players.append(Player.Player(self._instance, 3))
-        
+    def add_players(self, players):
+        # if not self.real_player:
+        #     self.players = [BotPlayer.BotPlayer(self._instance, i) for i in range(4)]
+        # else:
+        #     self.players = [BotPlayer.BotPlayer(self._instance, i) for i in range(3)]
+        #     self.players.append(Player.Player(self._instance, 3))
+        self.players = players
         random.shuffle(self.players)
         print(f'Total initialized players: {len(self.players)}')
 
