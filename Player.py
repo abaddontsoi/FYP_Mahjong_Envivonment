@@ -146,19 +146,89 @@ class Player:
         
         return False
     
-    def find_first_by_number(self, tile_number: int, suit):
-        for i in range(len(self.hand)):
-            if self.hand[i].tile_number == tile_number:
-                if self.hand[i].tile_suit == suit:
+    def find_first_by_number(self, tile_number: int, suit, provided_list: list[MahjongTiles.MahjongTiles] = None):
+        if not provided_list:
+            for i in range(len(self.hand)):
+                if self.hand[i].tile_number == tile_number:
+                    if self.hand[i].tile_suit == suit:
+                        return i
+        else:
+            for i in range(len(provided_list)):
+                if provided_list[i].tile_number == tile_number:
+                    if provided_list[i].tile_suit == suit:
+                        return i
+        return -1
+    
+    def find_first_by_classId(self, classId: int, provided_list: list[MahjongTiles.MahjongTiles] = None):
+        if not provided_list:
+            for i in range(len(self.hand)):
+                if self.hand[i].classId == classId:
+                    return i
+        else:
+            for i in range(len(provided_list)):
+                if provided_list[i].classId == classId:
                     return i
         return -1
 
+    # length must be multiple of 3, max 12
+    def count_tuples(self, remaining: list[MahjongTiles.MahjongTiles]):
+        if not remaining or (len(remaining) % 3 != 0) or len(remaining) > 12:
+            return 0
+            
+        # Filter out first pong
+        pong_idx = None
+        for i in range(2, len(remaining)):
+            if remaining[i].classId == remaining[i-1].classId == remaining[i - 2].classId:
+                pong_idx = i
+                break
+        # 'pong' exists case
+        if pong_idx:
+            return 1 + self.count_tuples(
+                [t for idx, t in enumerate(remaining) if idx not in range(pong_idx - 2, pong_idx + 1)]
+            )
+        else:
+            # No 'pong' exists case
+            # Permutate and check for all possible chows
+            for i in range(3, 28):
+                tile_indices = []
+                first_chow_tile_idx = self.find_first_by_classId(i - 2, remaining)
+                second_chow_tile_idx = self.find_first_by_classId(i - 1, remaining)
+                third_chow_tile_idx = self.find_first_by_classId(i, remaining)
+                
+                if first_chow_tile_idx != -1 and second_chow_tile_idx != -1 and third_chow_tile_idx != -1:
+                    tile_indices = [first_chow_tile_idx, second_chow_tile_idx, third_chow_tile_idx]
+                    print(tile_indices)
+                    tiles = sorted([t for idx, t in enumerate(remaining) if idx in tile_indices], key= lambda x: x.classId)
+                    tiles = tuple(tiles)
+                    
+                    tuple_type = self.check_tuple_type(tiles)
+                    if tuple_type != None:
+                        return 1 + self.count_tuples([t for t in remaining if t not in tiles])
+            
+            return 0
+
     def win(self, call_tile: MahjongTiles.MahjongTiles):
-        pass
+        # 2 Cases
+        required_tuples = 4 - len(self.called_tuples)
+        # An eye exists
+
+        # An eye does not exist
+        # 1 tile remains
+        if required_tuples == 0 and len(self.hand) == 1:
+            if call_tile.classId == self.hand[0].classId:
+                return True
     
     def self_drawn(self):
-        ...
+        # 2 Cases
+        required_tuples = 4 - len(self.called_tuples)
+        # An eye exists
 
+        # An eye does not exist
+        # 1 tile remains
+        if required_tuples == 0 and len(self.hand) == 2:
+            if self.hand[1].classId == self.hand[0].classId:
+                return True
+            
     def kong(self, call_tile: MahjongTiles.MahjongTiles):
         call_tile_id = call_tile.classId
         kong_tiles = [t for t in self.hand if t.classId == call_tile_id]

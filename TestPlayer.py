@@ -106,13 +106,91 @@ class TestPlayer(unittest.TestCase):
         self.assertIsNone(result)
 
     # === WIN & STUB METHODS ===
+    def test_count_tuples_all_chow(self):
+        self.player.hand = [MahjongTiles(i) for i in range(1, 13)]
+        count = self.player.count_tuples(self.player.hand)
+        self.assertEqual(count, 4)
+
+
+    def test_count_tuples_all_pong(self):
+        self.player.hand = [
+            MahjongTiles(1),
+            MahjongTiles(1),
+            MahjongTiles(1),
+            MahjongTiles(2),
+            MahjongTiles(2),
+            MahjongTiles(2),
+        ]
+        self.player.hand.sort(key= lambda x : x.classId)
+        count = self.player.count_tuples(self.player.hand)
+        self.assertEqual(count, 2)
+    
+    def test_count_tuples_2_same_chow(self):
+        self.player.hand = [
+            MahjongTiles(1),
+            MahjongTiles(1),
+            MahjongTiles(2),
+            MahjongTiles(2),
+            MahjongTiles(3),
+            MahjongTiles(3),
+        ]
+        self.player.hand.sort(key= lambda x : x.classId)
+        count = self.player.count_tuples(self.player.hand)
+        self.assertEqual(count, 2)
+    
+    def test_count_tuples_overlap_chow(self):
+        self.player.hand = [
+            MahjongTiles(1),
+            MahjongTiles(2),
+            MahjongTiles(2),
+            MahjongTiles(3),
+            MahjongTiles(3),
+            MahjongTiles(4),
+        ]
+        self.player.hand.sort(key= lambda x : x.classId)
+        count = self.player.count_tuples(self.player.hand)
+        self.assertEqual(count, 2)
+    
+    def test_count_tuples_overlap_chow_pong(self):
+        self.player.hand = [
+            MahjongTiles(1),
+            MahjongTiles(2),
+            MahjongTiles(2),
+            MahjongTiles(2),
+            MahjongTiles(2),
+            MahjongTiles(3),
+            MahjongTiles(1),
+            MahjongTiles(2),
+            MahjongTiles(2),
+            MahjongTiles(2),
+            MahjongTiles(2),
+            MahjongTiles(3),
+        ]
+        self.player.hand.sort(key= lambda x : x.classId)
+        count = self.player.count_tuples(self.player.hand)
+        self.assertEqual(count, 4)
+
     def test_win(self):
         self.player.win(MahjongTiles(1))  # Just verify no crash
         self.assertTrue(True)
 
+    def test_win_single_tile(self):
+        for i in range(1, 35):
+            self.player.hand = [MahjongTiles(i)]
+            self.player.called_tuples = [()]*4
+            can_win = self.player.win(MahjongTiles(i))
+            self.assertTrue(can_win)
+    
     def test_self_drawn(self):
         self.player.self_drawn()  # Stub method
         self.assertTrue(True)
+
+    def test_self_drawn_single_tile(self):
+        for i in range(1, 35):
+            self.player.hand = [MahjongTiles(i), MahjongTiles(i)]
+            self.player.called_tuples = [()]*4
+            self_drawn = self.player.self_drawn()
+            self.assertTrue(self_drawn)
 
     # === KONG METHODS ===
     def test_kong(self):
