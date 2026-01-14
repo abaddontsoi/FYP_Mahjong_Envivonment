@@ -234,7 +234,7 @@ class Player:
         
         # Special winning cases
         # 13 Orphans
-        if self.check_13_orphans(self.hand):
+        if self.check_13_orphans(remaining):
             return True
         
         # 2 Cases
@@ -242,7 +242,7 @@ class Player:
 
 
         # Filter out 1 pair and check for remainings to see if they can form tuples
-        if len(self.hand) > 1:
+        if len(remaining) > 1:
             proposed_eye = []
             for idx in range(1, len(remaining)):
                 if remaining[idx].classId == remaining[idx - 1].classId:

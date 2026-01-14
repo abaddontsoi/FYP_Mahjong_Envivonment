@@ -216,6 +216,67 @@ class TestPlayer(unittest.TestCase):
         win = self.player.check_win(MahjongTiles(1))
         self.assertTrue(win)
 
+    # 13 Orphans
+    def test_check_win_13_orphans(self):
+        self.player.hand = [
+            MahjongTiles(1),
+            MahjongTiles(9),
+            MahjongTiles(10),
+            MahjongTiles(18),
+            MahjongTiles(19),
+            MahjongTiles(27),
+            MahjongTiles(28),
+            MahjongTiles(29),
+            MahjongTiles(30),
+            MahjongTiles(31),
+            MahjongTiles(32),
+            MahjongTiles(33),
+            MahjongTiles(34),
+        ]
+        self.player.hand.sort(key= lambda x: x.classId)
+        self.player.called_tuples = []
+
+        win = self.player.check_win(MahjongTiles(1))
+        self.assertTrue(win)
+
+    # 13 Orphans winning
+    def test_check_win_13_orphans_waiting(self):
+        # 13 possible winning tiles
+        for i in [
+            MahjongTiles(1),
+            MahjongTiles(9),
+            MahjongTiles(10),
+            MahjongTiles(18),
+            MahjongTiles(19),
+            MahjongTiles(27),
+            MahjongTiles(28),
+            MahjongTiles(29),
+            MahjongTiles(30),
+            MahjongTiles(31),
+            MahjongTiles(32),
+            MahjongTiles(33),
+            MahjongTiles(34),
+        ]:
+            self.player.hand = [
+                MahjongTiles(1),
+                MahjongTiles(9),
+                MahjongTiles(10),
+                MahjongTiles(18),
+                MahjongTiles(19),
+                MahjongTiles(27),
+                MahjongTiles(28),
+                MahjongTiles(29),
+                MahjongTiles(30),
+                MahjongTiles(31),
+                MahjongTiles(32),
+                MahjongTiles(33),
+                MahjongTiles(34),
+            ]
+            self.player.hand.sort(key= lambda x: x.classId)
+            self.player.called_tuples = []
+            self_drawn = self.player.check_win(i)
+            self.assertTrue(self_drawn)
+
     def test_check_win_false(self):
         self.player.hand = [
             MahjongTiles(1),
@@ -294,6 +355,101 @@ class TestPlayer(unittest.TestCase):
         mock_safegetoption.return_value = 'self drawn'
         self_drawn = self.player.self_drawn()
         self.assertTrue(self_drawn)
+
+    # 13 Orphans self drawn
+    @patch.object(Player, 'safe_get_option')
+    def test_self_drawn_13_orphans_waiting(self, mock_safegetoption):
+        # 13 possible winning tiles
+        for i in [
+            MahjongTiles(1),
+            MahjongTiles(9),
+            MahjongTiles(10),
+            MahjongTiles(18),
+            MahjongTiles(19),
+            MahjongTiles(27),
+            MahjongTiles(28),
+            MahjongTiles(29),
+            MahjongTiles(30),
+            MahjongTiles(31),
+            MahjongTiles(32),
+            MahjongTiles(33),
+            MahjongTiles(34),
+        ]:
+            self.player.hand = [
+                MahjongTiles(1),
+                MahjongTiles(9),
+                MahjongTiles(10),
+                MahjongTiles(18),
+                MahjongTiles(19),
+                MahjongTiles(27),
+                MahjongTiles(28),
+                MahjongTiles(29),
+                MahjongTiles(30),
+                MahjongTiles(31),
+                MahjongTiles(32),
+                MahjongTiles(33),
+                MahjongTiles(34),
+            ]
+            self.player.hand.sort(key= lambda x: x.classId)
+            self.player.called_tuples = []
+            self.env.deck = [i]
+            self.player.draw_tiles([self.env.deck.pop()])
+            mock_safegetoption.return_value = 'self drawn'
+            self_drawn = self.player.self_drawn()
+            self.assertTrue(self_drawn)
+
+    # 13 Orphans self drawn
+    @patch.object(Player, 'safe_get_option')
+    def test_self_drawn_13_orphans_1_tile_waiting(self, mock_safegetoption):
+        self.player.hand = [
+            MahjongTiles(9),
+            MahjongTiles(10),
+            MahjongTiles(18),
+            MahjongTiles(19),
+            MahjongTiles(27),
+            MahjongTiles(28),
+            MahjongTiles(29),
+            MahjongTiles(30),
+            MahjongTiles(31),
+            MahjongTiles(32),
+            MahjongTiles(33),
+            MahjongTiles(34),
+            MahjongTiles(34),
+        ]
+        self.player.hand.sort(key= lambda x: x.classId)
+        self.player.called_tuples = []
+        self.env.deck = [MahjongTiles(1)]
+        self.player.draw_tiles([self.env.deck.pop()])
+        mock_safegetoption.return_value = 'self drawn'
+        self_drawn = self.player.self_drawn()
+        self.assertTrue(self_drawn)
+
+
+    def test_self_drawn_false(self):
+        self.player.hand = [
+            MahjongTiles(7),
+            MahjongTiles(8),
+            MahjongTiles(9),
+            MahjongTiles(10),
+            MahjongTiles(11),
+            MahjongTiles(12),
+            MahjongTiles(13),
+            MahjongTiles(14),
+        ]
+        self.player.called_tuples = [
+            (
+                MahjongTiles(1),
+                MahjongTiles(2),
+                MahjongTiles(3),
+            ),
+            (
+                MahjongTiles(1),
+                MahjongTiles(2),
+                MahjongTiles(3),
+            ),
+        ]
+        self_drawn = self.player.self_drawn()
+        self.assertTrue(not self_drawn)
 
     @patch.object(Player, 'safe_get_option')
     def test_self_drawn_single_tile(self, mock_safegetoption):
