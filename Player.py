@@ -18,7 +18,6 @@ class Player:
 
         self.additional_kong()
         self.hidden_kong()
-        self.self_drawn()
 
     def display_hand(self):
         print(self.get_hand_as_string())
@@ -88,6 +87,8 @@ class Player:
         available_actions = []
         # Put those selected mahjong tiles to self.called_tuples, responses are: 
         # 'win'
+        if self.check_win(call_tile):
+            available_actions.append('win')
 
         # 'kong'
         call_tile_id = call_tile.classId
@@ -197,7 +198,6 @@ class Player:
                 
                 if first_chow_tile_idx != -1 and second_chow_tile_idx != -1 and third_chow_tile_idx != -1:
                     tile_indices = [first_chow_tile_idx, second_chow_tile_idx, third_chow_tile_idx]
-                    print(tile_indices)
                     tiles = sorted([t for idx, t in enumerate(remaining) if idx in tile_indices], key= lambda x: x.classId)
                     tiles = tuple(tiles)
                     
@@ -207,27 +207,68 @@ class Player:
             
             return 0
 
-    def win(self, call_tile: MahjongTiles.MahjongTiles):
+    def check_13_orphans(self, hand: list[MahjongTiles.MahjongTiles]):
+        required_classId = [1, 9, 10, 18, 19, 27, 28, 29, 30, 31, 32, 33, 34]
+        for classId in required_classId:
+            if self.find_first_by_classId(classId) == -1:
+                return False
+        
+        proposed_eye = []
+        for idx in range(1, len(hand)):
+            if hand[idx].classId == hand[idx - 1].classId:
+                proposed_eye.append(
+                    (hand[idx - 1], hand[idx])
+                )
+        if len(proposed_eye) == 1:
+            return True
+        else:
+            return False
+
+    def check_win(self, call_tile: MahjongTiles.MahjongTiles = None):
+        # Insert to hand
+        remaining = self.hand + []
+        if call_tile:
+            remaining += [call_tile]
+        
+        remaining.sort(key= lambda x: x.classId)
+        
+        # Special winning cases
+        # 13 Orphans
+        if self.check_13_orphans(self.hand):
+            return True
+        
         # 2 Cases
         required_tuples = 4 - len(self.called_tuples)
-        # An eye exists
 
-        # An eye does not exist
+
+        # Filter out 1 pair and check for remainings to see if they can form tuples
+        if len(self.hand) > 1:
+            proposed_eye = []
+            for idx in range(1, len(remaining)):
+                if remaining[idx].classId == remaining[idx - 1].classId:
+                    proposed_eye.append(
+                        (remaining[idx - 1], remaining[idx])
+                    )
+
+            for eye in proposed_eye:
+                tuple_count = self.count_tuples([t for t in remaining if t not in eye])
+                if tuple_count == required_tuples:
+                    return True
+
+
         # 1 tile remains
         if required_tuples == 0 and len(self.hand) == 1:
             if call_tile.classId == self.hand[0].classId:
                 return True
+            
+        return False
     
     def self_drawn(self):
-        # 2 Cases
-        required_tuples = 4 - len(self.called_tuples)
-        # An eye exists
-
-        # An eye does not exist
-        # 1 tile remains
-        if required_tuples == 0 and len(self.hand) == 2:
-            if self.hand[1].classId == self.hand[0].classId:
-                return True
+        options = ['self drawn', 'pass']
+        if self.check_win():
+            result = self.safe_get_option(options, f"{options}: ")
+            return result == 'self drawn'
+        return False
             
     def kong(self, call_tile: MahjongTiles.MahjongTiles):
         call_tile_id = call_tile.classId

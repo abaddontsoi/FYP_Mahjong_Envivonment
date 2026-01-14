@@ -104,7 +104,9 @@ class MahjongEnv:
         if call_queues['win']:
             self.end_round = True
             for i in call_queues['win']:
-                self.players[i].win(self.discard_buffer)
+                action_taken = True
+                print(f"Player {self.players[i].id} wins!")
+            return
 
         # Check if any player is to kong
         elif call_queues['kong']:
@@ -190,5 +192,9 @@ class MahjongEnv:
 
             while not self.end_round:
                 self.players[self.current_player].draw_tiles([self.deck.pop()])
+                current_player_self_drawn = self.players[self.current_player].self_drawn()
+                if current_player_self_drawn:
+                    print(f"Player {self.players[self.current_player].id} wins!")
+                    break
                 self.request_player_discard(self.current_player)
                 self.round_state_check()
