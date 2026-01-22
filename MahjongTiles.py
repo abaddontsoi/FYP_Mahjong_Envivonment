@@ -1,4 +1,5 @@
 import pygame
+
 tile_classes = {
     1: ('1m', '\U0001F007', 'assets/1m.png'), 
     2: ('2m', '\U0001F008', 'assets/2m.png'), 
@@ -47,8 +48,7 @@ class MahjongTiles(pygame.sprite.Sprite):
         self.tile_image_path = self.tile_class_info[2]
         self.image = pygame.image.load(self.tile_image_path)
         self.rect = self.image.get_rect()
-        self.rect.bottomright = init_pos
-        # print(self.rect.width, self.rect.height)
+        self.rect.topleft = init_pos
 
     def print_tile(self):
         print(self.tile_class_info[1])

@@ -1,14 +1,26 @@
 import random
-import pygame
 import MahjongTiles
 from PlayerGUI import PlayerGUI
 from BotPlayerGUI import BotPlayerGUI
+import pygame
+
+game_states = ['initializing_round', 
+               'player_drawing_from_deck', 
+               'checking_on_draw_action',
+               'waiting_discard', 
+               'pooling_for_action', 
+               'player_take_action',
+               'ending_round', 
+               'ending_wind', 
+               'ending_game'
+               ]
 
 class MahjongGUIEnv:
-
     def __init__(self, real_player = True):
+        # Main game loop
+        self.game_loop = None
+
         self.deck = []
-        self._reset()
         self.wind = -1
         self.round = -1
         self.players = []
@@ -20,13 +32,14 @@ class MahjongGUIEnv:
         self.min_faan = 3
         self.max_faan = 10
         self.discard_buffer = None
+        self.event_buffer = None
+        self.game_state = None
+        self.call_actions = []
 
-    def _reset(self):
-        self.wind = 0
-        self.round = 0
-        self.current_player = 0
+    def assign_game_loop(self, game_loop):
+        self.game_loop = game_loop
 
-    def _generate_tiles(self):
+    def generate_tiles(self):
         # Clear deck
         self.deck = []
         # Create tiles
@@ -38,110 +51,10 @@ class MahjongGUIEnv:
         random.shuffle(self.deck)
         print(f"Deck with {len(self.deck)} tiles shuffled.")
 
-    def _view_deck(self):
-        for tile in self.deck:
-            tile.print_tile()
-
-    def get_pool_and_buffer(self):
-        discard_pool = self.discard_pool
-        
-        if self.discard_buffer:
-            return discard_pool + [self.discard_buffer]
-        
-        return discard_pool
-
-    def request_player_discard(self, current_player):
-        self.discard_buffer = self.players[current_player].discard()
-
-    def game_state_check(self):
-        # Check if this round is last round of the game
-        if self.wind == 3 and self.round == 3:
-            self.end_game = True
-            return
-    
-        # Update round and wind info
-        self.round += 1
-        self.round %= 4
-        if self.round == 0:
-            self.wind += 1
-            self.wind %= 4
-
-    def pool_for_call(self):
-        temp_current_player = self.current_player
-        # Pool all players to see if they can call or not
-        call_queues = {
-            'win': [],
-            'kong': [],
-            'pong': [],
-            'chow': []
-        }
-        for i in range(3):
-            temp_current_player += 1
-            temp_current_player %= 4
-            call_response = self.players[temp_current_player].call_response(self.discard_buffer, i==0)
-            if call_response and call_response != 'pass':
-                call_queues[call_response].append(temp_current_player)
-
-        action_taken = False        
-        # Check if any player is to win
-        if call_queues['win']:
-            self.end_round = True
-            for i in call_queues['win']:
-                action_taken = True
-                print(f"Player {self.players[i].id} wins!")
-            return
-
-        # Check if any player is to kong
-        elif call_queues['kong']:
-            # Player id
-            action_player = call_queues['kong'][0]
-            # Move the tile to player's hand
-            self.players[action_player].kong(self.discard_buffer)
-            self.discard_buffer = None
-            # Draw 1 tile
-            self.players[action_player].draw_tiles([self.deck.pop(0)])
-            action_taken = True
-
-        # Check if any player is to pong
-        elif call_queues['pong']:
-            action_player = call_queues['pong'][0]
-            # Move the tile to player's hand
-            self.players[action_player].pong(self.discard_buffer)
-            self.discard_buffer = None
-            action_taken = True
-
-        # Check if any player is to chow
-        elif call_queues['chow']:
-            action_player = call_queues['chow'][0]
-            # Move the tile to player's hand
-            self.players[action_player].chow(self.discard_buffer)
-            self.discard_buffer = None
-            action_taken = True
-
-        if action_taken:
-            # Discard
-            self.request_player_discard(action_player)
-            self.current_player = action_player
-            self.discard_buffer = None
-            self.pool_for_call()
-        else:
-            if self.discard_buffer:
-                self.discard_pool.append(self.discard_buffer)
-                self.discard_buffer = None
-
-    def round_state_check(self):
-        self.pool_for_call()
-
-        if len(self.deck) == 0:
-            self.end_round = True
-            return
-        
-        self.current_player += 1
-        self.current_player %= 4
-
     def add_players(self, players: list[PlayerGUI]):
         self.players = players
         random.shuffle(self.players)
+        print(f'Total initialized players: {len(self.players)}')
 
     def round_reset(self):
         # Clear players' hand
@@ -149,49 +62,241 @@ class MahjongGUIEnv:
             player.clear_hand()
 
         self.end_round = False
-        self._generate_tiles()
+        self.generate_tiles()
         self.discard_pool = []
         self.discard_buffer = None
         
         # Shift players play order
         self.players.append(self.players[0])
         self.players.pop()
-        self.game_state_check()
-    
-    def handle_event(self, player: PlayerGUI):
-        response = None
-        while response is None:
-            if pygame.event.get() == pygame.MOUSEBUTTONDOWN:
-                mouse_pos = pygame.mouse.get_pos()
-                response = True
-        return response
 
-    def init_game(self):
+
+    def receive_input(self, input_data: pygame.event.Event):
+        self.event_buffer = input_data
+
+    # State based update method
+    def update_game_state(self):
+        if self.game_state == None:
+            self.game_state = 'initializing_round'
+            print("Initializing new round.")
+        
+        if self.game_state == 'initializing_round':
+            self.round_reset()
+
+            # Draw initial 13 tiles for each player
+            for player in self.players:
+                initial_tiles = [self.deck.pop() for _ in range(13)]
+                player.draw_tiles(initial_tiles)
+            
+            # Debug: View each player's hand
+            for player in self.players:
+                print(f"{player.id}'s initial hand:")
+                player.display_hand()
+
+            self.game_state = 'player_drawing_from_deck'
+            print("Player draw from deck.")
+
+        if self.game_state == 'player_drawing_from_deck':
+            # Check if deck is empty
+            # If yes, this round has ended
+            if not self.deck:
+                print("No more tiles in deck, round ends in a draw.")
+                self.end_round = True
+                self.game_state = 'ending_round'
+            else:
+                current_player = self.players[self.current_player]
+                drawn_tile = self.deck.pop()
+                current_player.draw_tiles([drawn_tile])
+                print(f"Player {current_player.id} drew a tile.")
+                self.game_state = 'checking_on_draw_action'
+
+        if self.game_state == 'checking_on_draw_action':
+            # Check for self-drawn winning/additional kong/hidden kong action
+            self.game_state = 'waiting_discard'
+        
+        if self.game_state == 'waiting_discard':
+            # Wait for player to discard a tile
+            # Check clicking event from event buffer
+            # See if it is on any tile of current player's hand
+            action_player = self.current_player
+            if self.event_buffer is not None and self.event_buffer.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = self.event_buffer.pos
+                current_player = self.players[action_player]
+                for tile in current_player.hand:
+                    if tile.rect.collidepoint(mouse_pos):
+                        self.discard_buffer = tile
+                        print(f"Player {current_player.id} discarded a tile.")
+                        self.event_buffer = None
+                        self.game_state = 'pooling_for_action'
+                        break
+                # Filter out the discarded tile
+                current_player.hand = [tile for tile in current_player.hand if tile != self.discard_buffer]
+                current_player.align_tile_sprites()
+
+        if self.game_state == 'pooling_for_action':
+            if self.discard_buffer:
+                # Pool each player for call actions
+                has_call = False
+                for i in range(1, 4):
+                    player_actions = self.players[(self.current_player + i) % 4].check_possible_calls(self.discard_buffer, i==1)
+                    if player_actions:
+                        has_call = True
+                        player_actions.append('pass')
+                    self.call_actions.append(player_actions)
+                self.game_state = 'player_take_action'
+
+                # If not call, move discard buffer to discard pool
+                if not has_call:
+                    print(f"Tile {self.discard_buffer} added to discard pool.")
+                    self.discard_pool.append(self.discard_buffer)
+                    self.discard_buffer = None
+                    self.call_actions = []
+
+                    # Allow next player to draw (original order)
+                    self.current_player += 1
+                    self.current_player %= 4
+                    self.game_state = 'player_drawing_from_deck'
+            else:
+                # No discard buffer, move to next player
+                self.current_player += 1
+                self.current_player %= 4
+                self.game_state = 'player_drawing_from_deck'
+
+        if self.game_state == 'player_take_action':
+            # Check the event buffer for player's action
+            action_player = None
+            call_queue = {
+                'win': [],
+                'kong': [],
+                'pong': [],
+                'chow': []
+            }
+            for i in range(1, 4):
+                if self.event_buffer is not None and self.discard_buffer and self.event_buffer.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_pos = self.event_buffer.pos
+                    possible_actions = self.call_actions[i-1]
+                    button_start_x = 1000  # Start after ~5 tiles (50+5*55=325)
+                    button_y = 1000 - ((self.current_player + i) % 4) * (self.players[(self.current_player + i) % 4].hand[0].rect.height + 20)
+                    button_width, button_height = 70, 35
+                    for btn_idx, action in enumerate(possible_actions):
+                        btn_x = button_start_x + btn_idx * 80
+                        btn_rect = pygame.Rect(btn_x, button_y, button_width, button_height)
+                        if btn_rect.collidepoint(mouse_pos):
+                            action_player = (self.current_player + i) % 4
+                            chosen_action = action
+                            print(f"Player {self.players[action_player].id} chose action: {chosen_action}")
+
+                            # Handle action
+                            if chosen_action == 'win':
+                                self.end_round = True
+                                print(f"Player {self.players[action_player].id} wins!")
+                            elif chosen_action == 'kong':
+                                self.players[action_player].kong(self.discard_buffer)
+                                self.discard_buffer = None
+                                # Draw 1 tile
+                                self.players[action_player].draw_tiles([self.deck.pop(0)])
+                            elif chosen_action == 'pong':
+                                self.players[action_player].pong(self.discard_buffer)
+                                self.discard_buffer = None
+                            elif chosen_action == 'chow':
+                                self.players[action_player].chow(self.discard_buffer)
+                                self.discard_buffer = None
+                            elif chosen_action == 'pass':
+                                # If all players pass, add to discard pool
+                                if i == 3:
+                                    print(f"Tile {self.discard_buffer} added to discard pool.")
+                                    self.discard_pool.append(self.discard_buffer)
+                                    self.discard_buffer = None
+
+                                    # Allow next player to draw (original order)
+                                    self.current_player = action_player + 1
+                                    self.current_player %= 4
+                                    self.game_state = 'player_drawing_from_deck'
+                                    self.call_actions = []
+
+
+                            # Discard
+                            if chosen_action != 'pass':
+                                self.game_state = 'waiting_discard'
+                                self.current_player = action_player
+                            else:
+                                # Original order
+                                self.current_player += 1
+                                self.current_player %= 4
+                                self.game_state = 'player_drawing_from_deck'
+                            
+                            self.discard_buffer = None
+                            self.call_actions = []
+                            
+                            self.event_buffer = None
+                            break
+                if action_player is not None:
+                    break
+
+
+        if not self.event_buffer:
+            return
+        
+    def start_game(self):
         if len(self.players) != 4:
             raise ValueError
         
-        while not self.end_game:
-            # Reset each round
-            print("="*40)
-            self.round_reset()
-            winds = ['East', 'South', 'West', 'North']
-            print(f"{winds[self.wind]} Wind {self.round + 1} Round")
+        self.round = 0
+        self.wind = 0
+        self.current_player = 0
+        self.game_state = None
+        print("Game started.")
 
-            for player in self.players:
-                drawn_tiles = self.deck[:13]
-                self.deck = self.deck[13:]
-                player.hand = drawn_tiles
-                player.sort_hand()
-    
     def get_screen_items(self):
-        player_tiles = []
-        for player in self.players:
-            player.align_hand_sprites()
-            player_tiles.append(player.hand)
-
-        # Process discard pool tiles' positions
-
-        return {
-            'player_tiles': player_tiles,
-            'discard_pool': self.discard_pool,
+        screen_items = {
+            'players': [],
+            'discard_pool': [],
+            'player_action_buttons': []
         }
+
+        for idx, player in enumerate(self.players):
+            player.align_tile_sprites()
+            for tile in player.hand:
+                tile.rect.topleft = (tile.rect.topleft[0], 1000 - idx * (tile.rect.height + 20))
+            
+            screen_items['players'].append(player)
+
+        # Collect tiles from discard pool
+        # Update location for each tile in discard pool, each row should have at most 20 tiles
+        for idx, tile in enumerate(self.discard_pool):
+            tile.rect.topleft = (50 + (idx % 20) * (tile.rect.width + 5), 50 + (idx //20) * (tile.rect.height + 5))
+        
+        # Limit displayed discard pool to last 80 tiles
+        screen_items['discard_pool'].extend(self.discard_pool[-80:])
+
+
+        class ActionButton(pygame.sprite.Sprite):
+            def __init__(self, action, rect):
+                super().__init__()
+                self.action = action
+                self.image = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+                self.image.fill((200, 200, 200))
+                font = pygame.font.SysFont(None, 20)
+                text_surf = font.render(str(action), True, (0, 0, 0))
+                text_rect = text_surf.get_rect(center=(rect.width//2, rect.height//2))
+                self.image.blit(text_surf, text_rect)
+                self.rect = rect
+        
+        # Create action buttons for each player based on call_actions
+        for idx, actions in enumerate(self.call_actions):
+            # Position: Right of hand, below tiles
+            hand_y = 1000 - ((self.current_player + idx + 1) % 4) * (self.players[(self.current_player + idx + 1) % 4].hand[0].rect.height + 20)
+            button_start_x = 1000  # Start after ~5 tiles (50+5*55=325)
+            button_y = hand_y  # Just below tiles
+            button_width, button_height = 70, 35
+            
+            player_buttons = []
+            for btn_idx, action in enumerate(actions):
+                btn_x = button_start_x + btn_idx * 80
+                btn_rect = pygame.Rect(btn_x, button_y, button_width, button_height)
+                button = ActionButton(action, btn_rect)
+                player_buttons.append(button)
+                
+            screen_items['player_action_buttons'].extend(player_buttons)
+        
+        return screen_items

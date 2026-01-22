@@ -18,8 +18,8 @@ class PlayerGUI:
         self.hand += tiles
         self.sort_hand()
 
-        self.additional_kong()
-        self.hidden_kong()
+        # self.additional_kong()
+        # self.hidden_kong()
 
     def display_hand(self):
         print(self.get_hand_as_string())
@@ -149,6 +149,57 @@ class PlayerGUI:
         
         return False
     
+    def check_possible_calls(self, call_tile: MahjongTiles.MahjongTiles, chow_allowed = False):
+        actions = []
+        # 'kong'
+        call_tile_id = call_tile.classId
+        count = 0
+        for t in self.hand:
+            if t.classId == call_tile_id:
+                count += 1
+        if count == 3:
+            actions.append('kong')
+        
+        # 'pong'
+        count = 0
+        for t in self.hand:
+            if t.classId == call_tile_id:
+                count += 1
+        if count >= 2:
+            actions.append('pong')
+        
+        # 'chow'
+        if call_tile.tile_suit != 'z' and chow_allowed: # 'z' suit not allow to 'chow'
+            same_suit_tiles_idx = []
+            for i in range(len(self.hand)):
+                if self.hand[i].tile_suit != call_tile.tile_suit:
+                    continue
+                else:
+                    target_idx = self.find_first_by_number(self.hand[i].tile_number, call_tile.tile_suit)
+                    if target_idx > -1:
+                        same_suit_tiles_idx.append(target_idx)
+            
+            same_suit_tiles_idx = set(same_suit_tiles_idx)
+            same_suit_tiles_idx = list(same_suit_tiles_idx)
+            same_suit_tiles_idx.sort()
+
+            chow_options = []
+            if len(same_suit_tiles_idx) >= 2:
+                for i in range(1, len(same_suit_tiles_idx)):
+                    chow_valid = self.chow_check([self.hand[same_suit_tiles_idx[i]], self.hand[same_suit_tiles_idx[i - 1]]], call_tile)
+                    if chow_valid:
+                        chow_options.append(
+                            (
+                                same_suit_tiles_idx[i],
+                                same_suit_tiles_idx[i - 1]
+                            )
+                        )
+
+            if chow_options:
+                actions.append('chow')
+        
+        return actions
+
     def find_first_by_number(self, tile_number: int, suit, provided_list: list[MahjongTiles.MahjongTiles] = None):
         if not provided_list:
             for i in range(len(self.hand)):
@@ -363,8 +414,18 @@ class PlayerGUI:
         chow_tiles.sort(key= lambda x: x.classId)
         self.called_tuples.append(tuple(chow_tiles))
     
-    def align_hand_sprites(self):   
-        self.hand.sort(key=lambda x: x.classId)
+    def align_tile_sprites(self):   
+        self.sort_hand()
         # set each tile's x-position based on index
         for idx, tile in enumerate(self.hand):
-            tile.rect.bottomright = (100 + idx * tile.rect.width, 700)
+            tile.rect.topleft = (50 + idx * tile.rect.width, 1000)
+
+        # Set called tuples' positions
+        # Flatted called tuples
+        flatted_called_tuples = []
+        for tuple in self.called_tuples:
+            for tile in tuple:
+                flatted_called_tuples.append(tile)
+        
+        for tile in flatted_called_tuples:
+            tile.rect.topleft = (50 + 14 * tile.rect.width, 1000)
