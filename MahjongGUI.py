@@ -69,10 +69,11 @@ class MahjongGUI:
     def render(self):
         self.screen.fill(GREEN)  # Green background for the board
 
-        # Remove all UI sprites if exists
+        # Remove all sprites if exists
         if self.ui_sprites:
             self.ui_sprites.empty()
-
+        if self.sprites:
+            self.sprites.empty()
 
         # Draw tiles and other game elements here
         screen_items = self.game_env.get_screen_items()
@@ -85,7 +86,7 @@ class MahjongGUI:
         # Player hand display
         players = screen_items['players']
         for idx, player in enumerate(players):
-            # if idx == self.game_env.current_player:
+            if idx == self.game_env.current_player:
                 for tile in player.hand:
                     self.sprites.add(tile)
         

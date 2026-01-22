@@ -427,5 +427,5 @@ class PlayerGUI:
             for tile in tuple:
                 flatted_called_tuples.append(tile)
         
-        for tile in flatted_called_tuples:
-            tile.rect.topleft = (50 + 14 * tile.rect.width, 1000)
+        for idx, tile in enumerate(flatted_called_tuples):
+            tile.rect.topleft = (50 + (14 + idx) * tile.rect.width, 1000)
