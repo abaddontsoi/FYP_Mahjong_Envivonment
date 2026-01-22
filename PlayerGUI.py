@@ -151,6 +151,11 @@ class PlayerGUI:
     
     def check_possible_calls(self, call_tile: MahjongTiles.MahjongTiles, chow_allowed = False):
         actions = []
+        # Put those selected mahjong tiles to self.called_tuples, responses are: 
+        # 'win'
+        if self.check_win(call_tile):
+            actions.append('win')
+
         # 'kong'
         call_tile_id = call_tile.classId
         count = 0
@@ -420,6 +425,8 @@ class PlayerGUI:
         for idx, tile in enumerate(self.hand):
             tile.rect.topleft = (50 + idx * tile.rect.width, 1000)
 
+
+    def align_called_tuple_sprites(self):
         # Set called tuples' positions
         # Flatted called tuples
         flatted_called_tuples = []

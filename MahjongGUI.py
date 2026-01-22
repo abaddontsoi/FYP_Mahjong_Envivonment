@@ -29,11 +29,16 @@ class MahjongGUI:
     def run(self):
         # Add players
         self.game_env.add_players([
-            PlayerGUI('Alice'),
-            PlayerGUI('Bob'),
-            PlayerGUI('Charlie'),
-            PlayerGUI('Diana'),
+            # PlayerGUI('Alice'),
+            # PlayerGUI('Bob'),
+            # PlayerGUI('Charlie'),
+            # PlayerGUI('Diana'),
+            BotPlayerGUI('Bot1'),
+            BotPlayerGUI('Bot2'),
+            BotPlayerGUI('Bot3'),
+            PlayerGUI('You')
         ]) 
+        random.shuffle(self.game_env.players)
         # Assign game environment to players
         for player in self.game_env.players:
             player.assign_env(self.game_env)
@@ -49,7 +54,7 @@ class MahjongGUI:
             while not self.game_env.end_round and self.running:
 
                 # Event listening loop ends when game ends in each round
-                while self.running :
+                while not self.game_env.end_game and self.running :
                     for event in pygame.event.get():
                         if event.type == pygame.QUIT:
                             self.running = False
@@ -58,7 +63,7 @@ class MahjongGUI:
                     
                     self.game_env.update_game_state()
                     self.render()
-                    self.clock.tick(30)
+                    self.clock.tick(120)
 
         pygame.quit()
 
@@ -86,10 +91,16 @@ class MahjongGUI:
         # Player hand display
         players = screen_items['players']
         for idx, player in enumerate(players):
-            if idx == self.game_env.current_player:
+            if player.__class__ == PlayerGUI and player.__class__ != BotPlayerGUI:
                 for tile in player.hand:
                     self.sprites.add(tile)
         
+        # Player called tuples display
+        players_called_tuples = screen_items['players_called_tuples']
+        for idx, called_tuples in enumerate(players_called_tuples):
+            for tuple in called_tuples:
+                for tile in tuple:
+                    self.sprites.add(tile)
         
         # Player action buttons display
         action_buttons = screen_items['player_action_buttons']

@@ -119,7 +119,11 @@ class MahjongGUIEnv:
             # Check clicking event from event buffer
             # See if it is on any tile of current player's hand
             action_player = self.current_player
-            if self.event_buffer is not None and self.event_buffer.type == pygame.MOUSEBUTTONDOWN:
+            if type(self.players[action_player]) == BotPlayerGUI:
+                self.discard_buffer = self.players[action_player].discard()
+                print(f"Player {self.players[action_player].id} discarded a tile.")
+                self.game_state = 'pooling_for_action'
+            elif self.event_buffer is not None and self.event_buffer.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = self.event_buffer.pos
                 current_player = self.players[action_player]
                 for tile in current_player.hand:
@@ -190,6 +194,8 @@ class MahjongGUIEnv:
                             if chosen_action == 'win':
                                 self.end_round = True
                                 print(f"Player {self.players[action_player].id} wins!")
+                                self.game_state = 'ending_round'
+                                break
                             elif chosen_action == 'kong':
                                 self.players[action_player].kong(self.discard_buffer)
                                 self.discard_buffer = None
@@ -233,6 +239,32 @@ class MahjongGUIEnv:
                 if action_player is not None:
                     break
 
+        if self.game_state == 'ending_round':
+            print("Round ended.")
+            self.end_round = True
+            if self.round >= 3:
+                self.game_state = 'ending_wind'
+                self.wind = (self.wind + 1) % 4
+            else:
+                self.round += 1
+                self.wind = (self.wind + 1) % 4
+                self.game_state = None
+
+        if self.game_state == 'ending_wind':
+            print("Wind ended.")
+            self.end_round = True
+            self.wind += 1
+            self.wind %= 4
+            self.round = 0
+            if self.wind == 0:
+                self.game_state = 'ending_game'
+            else:
+                self.game_state = None
+
+        if self.game_state == 'ending_game': 
+            print("Game ended.")
+            self.end_game = True
+            # Conclude players performance
 
         if not self.event_buffer:
             return
@@ -250,6 +282,7 @@ class MahjongGUIEnv:
     def get_screen_items(self):
         screen_items = {
             'players': [],
+            'players_called_tuples': [],
             'discard_pool': [],
             'player_action_buttons': []
         }
@@ -258,16 +291,24 @@ class MahjongGUIEnv:
             player.align_tile_sprites()
             for tile in player.hand:
                 tile.rect.topleft = (tile.rect.topleft[0], 1000 - idx * (tile.rect.height + 20))
-            
-            screen_items['players'].append(player)
+            screen_items['players'].append(player)            
+
+            player.align_called_tuple_sprites()
+            for tuple in player.called_tuples:
+                for tile in tuple:
+                    tile.rect.topleft = (tile.rect.topleft[0], 1000 - idx * (tile.rect.height + 20))
+            screen_items['players_called_tuples'].append(player.called_tuples)
 
         # Collect tiles from discard pool
         # Update location for each tile in discard pool, each row should have at most 20 tiles
-        for idx, tile in enumerate(self.discard_pool):
+        for idx, tile in enumerate(self.discard_pool[-80:]):
             tile.rect.topleft = (50 + (idx % 20) * (tile.rect.width + 5), 50 + (idx //20) * (tile.rect.height + 5))
         
         # Limit displayed discard pool to last 80 tiles
         screen_items['discard_pool'].extend(self.discard_pool[-80:])
+        if self.discard_buffer:
+            self.discard_buffer.rect.topleft = (50 + (len(self.discard_pool) % 20) * (self.discard_buffer.rect.width + 5), 50 + (len(self.discard_pool) //20) * (self.discard_buffer.rect.height + 5))
+            screen_items['discard_pool'].append(self.discard_buffer)
 
 
         class ActionButton(pygame.sprite.Sprite):
