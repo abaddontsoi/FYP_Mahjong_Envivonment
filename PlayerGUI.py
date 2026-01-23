@@ -332,7 +332,7 @@ class PlayerGUI:
             for tuple in self.called_tuples:
                 if tuple[0].classId == tile.classId and self.check_tuple_type(tuple) == 'pong':
                     # Possible additional kong exists
-                    actions.append('additional kong')
+                    actions.append('additional_kong')
                     break
 
         # check hidden kong
@@ -341,7 +341,7 @@ class PlayerGUI:
                 tuple = (self.hand[idx], self.hand[idx - 1], self.hand[idx - 2], self.hand[idx - 3])
                 tuple_type = self.check_tuple_type(tuple)
                 if tuple_type == 'kong':
-                    actions.append('hidden kong')
+                    actions.append('hidden_kong')
                     break
         
         if actions:
@@ -365,37 +365,27 @@ class PlayerGUI:
         self.called_tuples.append(tuple(kong_tiles))
     
     def additional_kong(self):
-        available_options = []
-        kong_tile_idx = None
-        for tile_idx, tile in enumerate(self.hand):
-            for idx, tuple in enumerate(self.called_tuples):
-                if tuple[0].classId == tile.classId and self.check_tuple_type(tuple) == 'pong':
+        for tile in self.hand:
+            for tuple in self.called_tuples:
+                if self.check_tuple_type(tuple) == 'pong' and tuple[0].classId == tile.classId:
                     # Possible additional kong exists
-                    self.display_hand()
-                    available_options.append('kong')
-                    available_options.append('pass')
-                    option = self.safe_get_option(available_options, f"{str(available_options)}: ")
-                    if option == 'kong':
-                        self.called_tuples[idx] = (*tuple, tile)
-                        kong_tile_idx = tile_idx
-                    break
-        if kong_tile_idx:
-            self.hand.pop(kong_tile_idx)
-            self.draw_tiles([self.game_env.deck.pop(0)])
-    
+                    self.called_tuples.remove(tuple)
+                    new_kong = (tuple[0], tuple[1], tuple[2], tile)
+                    self.called_tuples.append(new_kong)
+                    self.hand.remove(tile)
+                    return
+
+
     def hidden_kong(self):
         if len(self.hand) >= 4:
+            print("Checking hidden kong...")
             for idx in range(3, len(self.hand)):
                 tuple = (self.hand[idx], self.hand[idx - 1], self.hand[idx - 2], self.hand[idx - 3])
                 tuple_type = self.check_tuple_type(tuple)
                 if tuple_type == 'kong':
-                    available_options = ['kong', 'pass']
-                    option = self.safe_get_option(available_options, f"{available_options}: ")
-                    if option == 'kong':
-                        self.called_tuples.append(tuple)
-                        for tile in reversed(tuple):
-                            self.hand.remove(tile)
-                        self.draw_tiles([self.game_env.deck.pop(0)])
+                    self.called_tuples.append(tuple)
+                    for tile in reversed(tuple):
+                        self.hand.remove(tile)
                     break
 
     def pong(self, call_tile: MahjongTiles.MahjongTiles):

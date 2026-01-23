@@ -50,7 +50,9 @@ class MahjongGUIEnv:
         for key, value in MahjongTiles.tile_classes.items():
             for _ in range(4):
                 self.deck.append(MahjongTiles.MahjongTiles(key))
-        
+        # for i in range(20):
+        #     self.deck.append(MahjongTiles.MahjongTiles(1))
+
         # Shuffle the tiles
         random.shuffle(self.deck)
         print(f"Deck with {len(self.deck)} tiles shuffled.")
@@ -89,22 +91,22 @@ class MahjongGUIEnv:
 
             # Draw initial 13 tiles for each player
             for player in self.players:
-                # initial_tiles = [self.deck.pop() for _ in range(13)]
-                initial_tiles = [
-                    MahjongTiles.MahjongTiles(1),
-                    MahjongTiles.MahjongTiles(1),
-                    MahjongTiles.MahjongTiles(1),
-                    MahjongTiles.MahjongTiles(1),
-                    MahjongTiles.MahjongTiles(2),
-                    MahjongTiles.MahjongTiles(3),
-                    MahjongTiles.MahjongTiles(4),
-                    MahjongTiles.MahjongTiles(5),
-                    MahjongTiles.MahjongTiles(6),
-                    MahjongTiles.MahjongTiles(7),
-                    MahjongTiles.MahjongTiles(8),
-                    MahjongTiles.MahjongTiles(9),
-                    MahjongTiles.MahjongTiles(10),
-                ]
+                initial_tiles = [self.deck.pop() for _ in range(13)]
+                # initial_tiles = [
+                #     MahjongTiles.MahjongTiles(1),
+                #     MahjongTiles.MahjongTiles(1),
+                #     MahjongTiles.MahjongTiles(1),
+                #     MahjongTiles.MahjongTiles(1),
+                #     MahjongTiles.MahjongTiles(2),
+                #     MahjongTiles.MahjongTiles(2),
+                #     MahjongTiles.MahjongTiles(2),
+                #     MahjongTiles.MahjongTiles(2),
+                #     MahjongTiles.MahjongTiles(3),
+                #     MahjongTiles.MahjongTiles(3),
+                #     MahjongTiles.MahjongTiles(3),
+                #     MahjongTiles.MahjongTiles(3),
+                #     MahjongTiles.MahjongTiles(4),
+                # ]
                 player.draw_tiles(initial_tiles)
             
             # Debug: View each player's hand
@@ -134,41 +136,40 @@ class MahjongGUIEnv:
             on_draw_actions = self.players[self.current_player].check_on_draw_action()
             if on_draw_actions and self.players[self.current_player].__class__ is PlayerGUI:
                 self.current_player_on_draw_actions = on_draw_actions
-                self.game_state = 'player_take_on_draw_action'
                 print(f"Player {self.players[self.current_player].id} on draw actions: {self.current_player_on_draw_actions}")
+                self.game_state = 'player_take_on_draw_action'
             else:
                 self.game_state = 'waiting_discard'
         
         if self.game_state == 'player_take_on_draw_action':
-            print(f"Player {self.players[self.current_player].id} is taking an on draw action.")
             # Create action buttons for the player
             action_player = self.current_player
             if self.players[action_player].__class__ is BotPlayerGUI:
-                chosen_action = self.players[action_player].decide_on_draw_action(self.current_player_on_draw_actions)
-                print(f"Player {self.players[action_player].id} chose action: {chosen_action}")
-                
+                chosen_action = None                
                 # Handle action
-                if chosen_action == 'win':
+                if chosen_action == 'self_drawn':
                     self.end_round = True
                     print(f"Player {self.players[action_player].id} wins!")
                     self.game_state = 'ending_round'
-                elif chosen_action == 'additional kong':
+                elif chosen_action == 'additional_kong':
                     self.players[action_player].additional_kong()
                     # Draw 1 tile
                     self.players[action_player].draw_tiles([self.deck.pop(0)])
                     self.game_state = 'checking_on_draw_action'
-                elif chosen_action == 'hidden kong':
+                elif chosen_action == 'hidden_kong':
                     self.players[action_player].hidden_kong()
                     # Draw 1 tile
                     self.players[action_player].draw_tiles([self.deck.pop(0)])
                     self.game_state = 'checking_on_draw_action'
-                elif chosen_action == 'pass':
+                else:
                     self.game_state = 'waiting_discard'
             elif self.event_buffer is not None and self.event_buffer.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = self.event_buffer.pos
                 current_player = self.players[action_player]
-                button_start_x = 500  # Centered
-                button_y = 1000 - (self.current_player) * (current_player.hand[0].rect.height + 20) - 50
+
+                hand_y = 1000 - ((self.current_player) % 4) * (self.players[(self.current_player) % 4].hand[0].rect.height + 20)
+                button_start_x = 1000  # Start after ~5 tiles (50+5*55=325)
+                button_y = hand_y  # Just below tiles
                 button_width, button_height = 100, 50
                 for btn_idx, action in enumerate(self.current_player_on_draw_actions):
                     btn_x = button_start_x + btn_idx * 120
@@ -178,28 +179,32 @@ class MahjongGUIEnv:
                         print(f"Player {current_player.id} chose action: {chosen_action}")
 
                         # Handle action
-                        if chosen_action == 'win':
+                        if chosen_action == 'self_drawn':
                             self.end_round = True
-                            print(f"Player {current_player.id} wins!")
+                            print(f"Player {current_player.id} wins (self drawn)!")
                             self.game_state = 'ending_round'
-                        elif chosen_action == 'additional kong':
+                            self.current_player_on_draw_actions = []
+                            break
+                        elif chosen_action == 'additional_kong':
                             current_player.additional_kong()
                             # Draw 1 tile
                             current_player.draw_tiles([self.deck.pop(0)])
+                            self.current_player_on_draw_actions = []
                             self.game_state = 'waiting_discard'
-                        elif chosen_action == 'hidden kong':
+                        elif chosen_action == 'hidden_kong':
                             current_player.hidden_kong()
                             # Draw 1 tile
                             current_player.draw_tiles([self.deck.pop(0)])
+                            self.current_player_on_draw_actions = []
                             self.game_state = 'waiting_discard'
                         elif chosen_action == 'pass':
+                            self.current_player_on_draw_actions = []
                             self.game_state = 'waiting_discard'
                         
                         self.event_buffer = None
                         break
             
-            self.current_player_on_draw_actions = []
-            self.game_state = 'waiting_discard'
+                # self.current_player_on_draw_actions = []
         
         if self.game_state == 'waiting_discard':
             # Wait for player to discard a tile
@@ -418,10 +423,9 @@ class MahjongGUIEnv:
         
         # Create action buttons for current player's on draw actions
         if self.current_player_on_draw_actions:
-            action_player = self.current_player
-            hand_y = 1000 - (action_player) * (self.players[action_player].hand[0].rect.height + 20) - 50
-            button_start_x = 1000  # Centered
-            button_y = hand_y
+            hand_y = 1000 - ((self.current_player) % 4) * (self.players[(self.current_player) % 4].hand[0].rect.height + 20)
+            button_start_x = 1000  # Start after ~5 tiles (50+5*55=325)
+            button_y = hand_y  # Just below tiles
             button_width, button_height = 100, 50
             
             on_draw_buttons = []
