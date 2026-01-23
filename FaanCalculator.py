@@ -34,14 +34,18 @@ class FaanCalculator:
     }
     def __init__(self, round = 0, position = 0):
         self.hand = []
-        self.called_tile = []
+        self.call_tile = None
+        self.called_tuples = []
         self.round = round
         self.position = position
     
-    def update_hand_and_called_tile(self, hand, called_tile):
+    def update_hand_and_called_tuples(self, hand, called_tuples):
         self.hand = hand
-        self.called_tile = called_tile
+        self.called_tuples = called_tuples
 
+    def update_call_tile(self, call_tile):
+        self.call_tile = call_tile
+    
     def check_tuple_type(self, tuple: tuple[MahjongTiles]):
         if len(tuple) == 4:
             if tuple[0].classId == tuple[1].classId == tuple[2].classId == tuple[3].classId:
@@ -59,7 +63,7 @@ class FaanCalculator:
         ...
 
     def no_call(self):
-        if self.called_tile:
+        if self.called_tuples:
             return False
         return True
     
@@ -67,7 +71,7 @@ class FaanCalculator:
         return False
     
     def white(self):
-        for t in self.called_tile:
+        for t in self.called_tuples:
             if self.check_tuple_type(t) == 'pong':
                 if t[0].classId == 32:
                     return True
@@ -83,7 +87,7 @@ class FaanCalculator:
         return False
     
     def green(self):
-        for t in self.called_tile:
+        for t in self.called_tuples:
             if self.check_tuple_type(t) == 'pong':
                 if t[0].classId == 33:
                     return True
@@ -99,7 +103,7 @@ class FaanCalculator:
         return False
     
     def red(self):
-        for t in self.called_tile:
+        for t in self.called_tuples:
             if self.check_tuple_type(t) == 'pong':
                 if t[0].classId == 34:
                     return True
@@ -115,17 +119,69 @@ class FaanCalculator:
         return False
     
     def round_wind(self):
+        # Round wind mapping: 0-East, 1-South, 2-West, 3-North
+        # Check called tuples first
+        for tuple in self.called_tuples:
+            if self.check_tuple_type(tuple) == 'pong':
+                if tuple[0].classId == 28 + self.round:
+                    return True
+        
+        if len(self.hand) < 2:
+            return False
+        
+        # Check hand tiles
+        # When finds a pong shape, check if it is the round wind
+        for i in range(2, len(self.hand)):
+            if self.hand[i].classId == self.hand[i - 1].classId == self.hand[i - 2].classId:
+                if self.hand[i].classId == 28 + self.round:
+                    return True
+        
         return False
     
     def round_position(self):
+        # Round position mapping: 0-East, 1-South, 2-West, 3-North
+        # Check called tuples first
+        for tuple in self.called_tuples:
+            if self.check_tuple_type(tuple) == 'pong':
+                if tuple[0].classId == 28 + self.position:
+                    return True
+        
+        if len(self.hand) < 2:
+            return False
+        
+        # Check hand tiles
+        # When finds a pong shape, check if it is the position wind
+        for i in range(2, len(self.hand)):  
+            if self.hand[i].classId == self.hand[i - 1].classId == self.hand[i - 2].classId:
+                if self.hand[i].classId == 28 + self.position:
+                    return True
+        
         return False
 
     def mixed_orphans(self):
-        for t in self.called_tile:
+        # Valid pong class
+        valid_pong_classes = [1, 9, 10, 18, 19, 27, 28, 29, 30, 31, 32, 33, 34]
+
+        for t in self.called_tuples:
             if self.check_tuple_type(t) != 'pong':
                 return False
             if self.check_tuple_type(t) == 'pong':
-                if t[0].classId not in [1, 9, 10, 18, 19, 27, 28, 29, 30, 31, 32, 33, 34]:
+                if t[0].classId not in valid_pong_classes:
+                    return False
+
+        if len(self.hand) < 2:
+            return False
+
+        # Check any pairs in hand is not in valid pong classes
+        for i in range(1, len(self.hand)):
+            if self.hand[i].classId == self.hand[i - 1].classId:
+                if self.hand[i].classId not in valid_pong_classes:
+                    return False
+                
+        # Check any pong shape in hand is not in valid pong classes
+        for i in range(2, len(self.hand)):
+            if self.hand[i].classId == self.hand[i - 1].classId == self.hand[i - 2].classId:
+                if self.hand[i].classId not in valid_pong_classes:
                     return False
 
         return True
@@ -153,8 +209,8 @@ class FaanCalculator:
 
     def pure_suit(self):
         if not self.no_call():
-            flattened_called_tile = [item for tup in self.called_tile for item in tup]
-            full_hand = self.hand + flattened_called_tile
+            flattened_called_tuples = [item for tup in self.called_tuples for item in tup]
+            full_hand = self.hand + flattened_called_tuples
             for idx in range(1, len(self.hand)):
                 if self.hand[idx].tile_suit != full_hand[idx - 1].tile_suit:
                     return False
@@ -166,14 +222,64 @@ class FaanCalculator:
         return False
 
     def great_dragon_hand(self):
-        return False
+        white_found = False
+        green_found = False
+        red_found = False
+
+        for t in self.called_tuples:
+            if self.check_tuple_type(t) == 'pong':
+                if t[0].classId == 32:
+                    white_found = True
+                elif t[0].classId == 33:
+                    green_found = True
+                elif t[0].classId == 34:
+                    red_found = True
+
+        if len(self.hand) < 2:
+            return False
+        
+        for i in range(2, len(self.hand)):
+            if self.hand[i].classId == self.hand[i - 1].classId == self.hand[i - 2].classId:
+                if self.hand[i].classId == 32:
+                    white_found = True
+                elif self.hand[i].classId == 33:
+                    green_found = True
+                elif self.hand[i].classId == 34:
+                    red_found = True
+
+        return white_found and green_found and red_found
 
     def self_drawn_after_2kong(self):
         if self.no_call():
             return False
     
     def pure_orphans_hand(self):
-        return False
+        # Valid pong class
+        valid_pong_classes = [1, 9, 10, 18, 19, 27]
+
+        for t in self.called_tuples:
+            if self.check_tuple_type(t) != 'pong':
+                return False
+            if self.check_tuple_type(t) == 'pong':
+                if t[0].classId not in valid_pong_classes:
+                    return False
+
+        if len(self.hand) < 2:
+            return False
+
+        # Check any pairs in hand is not in valid pong classes
+        for i in range(1, len(self.hand)):
+            if self.hand[i].classId == self.hand[i - 1].classId:
+                if self.hand[i].classId not in valid_pong_classes:
+                    return False
+                
+        # Check any pong shape in hand is not in valid pong classes
+        for i in range(2, len(self.hand)):
+            if self.hand[i].classId == self.hand[i - 1].classId == self.hand[i - 2].classId:
+                if self.hand[i].classId not in valid_pong_classes:
+                    return False
+
+        return True
 
     def all_winds_and_dragons(self):
         return False

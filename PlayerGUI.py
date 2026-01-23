@@ -21,7 +21,7 @@ class PlayerGUI:
     def draw_tiles(self, tiles: list[MahjongTiles.MahjongTiles]):
         self.hand += tiles
         self.sort_hand()
-        self.faan_calculator.update_hand_and_called_tile(self.hand, self.called_tuples)
+        self.faan_calculator.update_hand_and_called_tuples(self.hand, self.called_tuples)
 
     def get_hand_as_string(self):
         return ' '.join([t.tile_class_info[1] for t in self.hand])
@@ -58,7 +58,7 @@ class PlayerGUI:
     def clear_hand(self):
         self.hand = []
         self.called_tuples = []
-        self.faan_calculator.update_hand_and_called_tile(self.hand, self.called_tuples)
+        self.faan_calculator.update_hand_and_called_tuples(self.hand, self.called_tuples)
 
     def find_first_by_number(self, tile_number: int, suit, provided_list: list[MahjongTiles.MahjongTiles] = None):
         if not provided_list:
