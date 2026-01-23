@@ -6,17 +6,19 @@ import pygame
 from ActionButton import ActionButton
 
 
-game_states = ['initializing_round', 
-               'player_drawing_from_deck', 
-               'checking_on_draw_action',
-               'player_take_on_draw_action',
-               'waiting_discard', 
-               'pooling_for_action', 
-               'player_take_action',
-               'ending_round', 
-               'ending_wind', 
-               'ending_game'
-               ]
+game_states = [
+    'initializing_round', 
+    'player_drawing_from_deck', 
+    'checking_on_draw_action',
+    'player_take_on_draw_action',
+    'waiting_discard', 
+    'pooling_for_action', 
+    'player_take_action',
+    'player_choose_chow_tiles',
+    'ending_round', 
+    'ending_wind', 
+    'ending_game'
+]
 
 class MahjongGUIEnv:
     def __init__(self, real_player = True):
@@ -37,8 +39,20 @@ class MahjongGUIEnv:
         self.discard_buffer = None
         self.event_buffer = None
         self.game_state = None
+
+        # Display and call related
+        self.screen_items = {
+            'players': [],
+            'players_called_tuples': [],
+            'discard_pool': [],
+            'player_action_buttons': [],
+            'player_on_draw_action_buttons': [],
+            'player_chow_option_buttons': []
+        }
         self.call_actions = []
         self.current_player_on_draw_actions = []
+        self.current_player_chow_options = []
+        self.current_chow_action_player = None
 
     def assign_game_loop(self, game_loop):
         self.game_loop = game_loop
@@ -50,8 +64,8 @@ class MahjongGUIEnv:
         for key, value in MahjongTiles.tile_classes.items():
             for _ in range(4):
                 self.deck.append(MahjongTiles.MahjongTiles(key))
-        # for i in range(20):
-        #     self.deck.append(MahjongTiles.MahjongTiles(1))
+        # for i in range(1, 35):
+        #     self.deck.append(MahjongTiles.MahjongTiles(i))
 
         # Shuffle the tiles
         random.shuffle(self.deck)
@@ -93,19 +107,7 @@ class MahjongGUIEnv:
             for player in self.players:
                 initial_tiles = [self.deck.pop() for _ in range(13)]
                 # initial_tiles = [
-                #     MahjongTiles.MahjongTiles(1),
-                #     MahjongTiles.MahjongTiles(1),
-                #     MahjongTiles.MahjongTiles(1),
-                #     MahjongTiles.MahjongTiles(1),
-                #     MahjongTiles.MahjongTiles(2),
-                #     MahjongTiles.MahjongTiles(2),
-                #     MahjongTiles.MahjongTiles(2),
-                #     MahjongTiles.MahjongTiles(2),
-                #     MahjongTiles.MahjongTiles(3),
-                #     MahjongTiles.MahjongTiles(3),
-                #     MahjongTiles.MahjongTiles(3),
-                #     MahjongTiles.MahjongTiles(3),
-                #     MahjongTiles.MahjongTiles(4),
+                #     MahjongTiles.MahjongTiles(i) for i in range(1,14)
                 # ]
                 player.draw_tiles(initial_tiles)
             
@@ -270,16 +272,11 @@ class MahjongGUIEnv:
             for i in range(1, 4):
                 if self.event_buffer is not None and self.discard_buffer and self.event_buffer.type == pygame.MOUSEBUTTONDOWN:
                     mouse_pos = self.event_buffer.pos
-                    possible_actions = self.call_actions[i-1]
-                    button_start_x = 1000  # Start after ~5 tiles (50+5*55=325)
-                    button_y = 1000 - ((self.current_player + i) % 4) * (self.players[(self.current_player + i) % 4].hand[0].rect.height + 20)
-                    button_width, button_height = 70, 35
+                    possible_actions = self.screen_items['player_action_buttons'][i-1]
                     for btn_idx, action in enumerate(possible_actions):
-                        btn_x = button_start_x + btn_idx * 80
-                        btn_rect = pygame.Rect(btn_x, button_y, button_width, button_height)
-                        if btn_rect.collidepoint(mouse_pos):
+                        if action.rect.collidepoint(mouse_pos):
                             action_player = (self.current_player + i) % 4
-                            chosen_action = action
+                            chosen_action = action.action
                             print(f"Player {self.players[action_player].id} chose action: {chosen_action}")
 
                             # Handle action
@@ -297,8 +294,17 @@ class MahjongGUIEnv:
                                 self.players[action_player].pong(self.discard_buffer)
                                 self.discard_buffer = None
                             elif chosen_action == 'chow':
-                                self.players[action_player].chow(self.discard_buffer)
-                                self.discard_buffer = None
+                                self.current_player_chow_options = self.players[action_player].get_chow_options(self.discard_buffer)
+                                if len(self.current_player_chow_options) > 1:
+                                    # Multiple chow options, let player choose
+                                    print(f"Player {self.players[action_player].id} chow options: {[ [str(tile) for tile in option] for option in self.current_player_chow_options ]}")
+                                    self.current_chow_action_player = action_player
+                                    self.game_state = 'player_choose_chow_tiles'
+                                    break
+                                elif len(self.current_player_chow_options) == 1: 
+                                    self.players[action_player].chow(self.discard_buffer, self.current_player_chow_options[0])
+                                    self.current_player_chow_options = []
+                                    self.discard_buffer = None
                             elif chosen_action == 'pass':
                                 # If all players pass, add to discard pool
                                 if i == 3:
@@ -316,20 +322,52 @@ class MahjongGUIEnv:
                             # Discard
                             if chosen_action != 'pass':
                                 self.game_state = 'waiting_discard'
+                                self.current_chow_action_player = None
                                 self.current_player = action_player
                             else:
                                 # Original order
                                 self.current_player += 1
                                 self.current_player %= 4
                                 self.game_state = 'player_drawing_from_deck'
-                            
+                                self.current_chow_action_player = None
+
                             self.discard_buffer = None
                             self.call_actions = []
                             
                             self.event_buffer = None
                             break
+
                 if action_player is not None:
                     break
+
+        if self.game_state == 'player_choose_chow_tiles':
+            action_player = self.current_chow_action_player
+            if type(self.players[action_player]) == BotPlayerGUI:
+                chosen_option = self.current_player_chow_options[0]
+                self.players[action_player].chow(self.discard_buffer, chosen_option)
+                self.discard_buffer = None
+                self.current_player_chow_options = []
+                self.game_state = 'waiting_discard'
+                self.current_chow_action_player = None
+            elif self.event_buffer is not None and self.event_buffer.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = self.event_buffer.pos
+                current_player = self.players[action_player]
+
+                # Detect which chow option button is clicked
+                for idx, chow_btn in enumerate(self.screen_items['player_chow_option_buttons']):
+                    if chow_btn.rect.collidepoint(mouse_pos):
+                        chosen_option = self.current_player_chow_options[idx]
+                        print(f"Player {current_player.id} chose chow option: {[str(tile) for tile in chosen_option]}")
+
+                        self.players[action_player].chow(self.discard_buffer, chosen_option)
+                        self.game_state = 'waiting_discard'
+                        self.call_actions = []
+                        self.current_player_chow_options = []
+                        self.current_chow_action_player = None
+                        self.current_player = action_player
+                        self.event_buffer = None
+                        self.discard_buffer = None
+                        break
 
         if self.game_state == 'ending_round':
             print("Round ended.")
@@ -371,26 +409,27 @@ class MahjongGUIEnv:
         self.game_state = None
         print("Game started.")
 
-    def get_screen_items(self):
-        screen_items = {
+    def refresh_screen_items(self):
+        self.screen_items = {
             'players': [],
             'players_called_tuples': [],
             'discard_pool': [],
             'player_action_buttons': [],
             'player_on_draw_action_buttons': [],
+            'player_chow_option_buttons': []
         }
 
         for idx, player in enumerate(self.players):
             player.align_tile_sprites()
             for tile in player.hand:
                 tile.rect.topleft = (tile.rect.topleft[0], 1000 - idx * (tile.rect.height + 20))
-            screen_items['players'].append(player)            
+            self.screen_items['players'].append(player)            
 
             player.align_called_tuple_sprites()
             for tuple in player.called_tuples:
                 for tile in tuple:
                     tile.rect.topleft = (tile.rect.topleft[0], 1000 - idx * (tile.rect.height + 20))
-            screen_items['players_called_tuples'].append(player.called_tuples)
+            self.screen_items['players_called_tuples'].append(player.called_tuples)
 
         # Collect tiles from discard pool
         # Update location for each tile in discard pool, each row should have at most 20 tiles
@@ -398,10 +437,10 @@ class MahjongGUIEnv:
             tile.rect.topleft = (50 + (idx % 20) * (tile.rect.width + 5), 50 + (idx //20) * (tile.rect.height + 5))
         
         # Limit displayed discard pool to last 80 tiles
-        screen_items['discard_pool'].extend(self.discard_pool[-80:])
+        self.screen_items['discard_pool'].extend(self.discard_pool[-80:])
         if self.discard_buffer:
             self.discard_buffer.rect.topleft = (50 + (len(self.discard_pool) % 20) * (self.discard_buffer.rect.width + 5), 50 + (len(self.discard_pool) //20) * (self.discard_buffer.rect.height + 5))
-            screen_items['discard_pool'].append(self.discard_buffer)
+            self.screen_items['discard_pool'].append(self.discard_buffer)
         
         # Create action buttons for each player based on call_actions
         for idx, actions in enumerate(self.call_actions):
@@ -418,7 +457,7 @@ class MahjongGUIEnv:
                 button = ActionButton(action, btn_rect)
                 player_buttons.append(button)
                 
-            screen_items['player_action_buttons'].extend(player_buttons)
+            self.screen_items['player_action_buttons'].append(player_buttons)
         
         
         # Create action buttons for current player's on draw actions
@@ -435,6 +474,22 @@ class MahjongGUIEnv:
                 button = ActionButton(action, btn_rect)
                 on_draw_buttons.append(button)
                 
-            screen_items['player_on_draw_action_buttons'].extend(on_draw_buttons)
-            
-        return screen_items
+            self.screen_items['player_on_draw_action_buttons'].extend(on_draw_buttons)
+        
+        if self.current_player_chow_options:
+            hand_y = 1000 - ((self.current_chow_action_player) % 4) * (self.players[(self.current_chow_action_player) % 4].hand[0].rect.height + 20)
+            button_start_x = 1000
+            button_y = hand_y  - 100 # Above tiles
+            button_width, button_height = 200, 50
+
+            chow_option_buttons = []
+            for btn_idx, option in enumerate(self.current_player_chow_options):
+                btn_x = button_start_x + btn_idx * (200 + 50)
+                btn_rect = pygame.Rect(btn_x, button_y, button_width, button_height)
+                button = ActionButton(f'', btn_rect, img_paths=[tile.tile_image_path for tile in option])
+                chow_option_buttons.append(button)
+                
+            self.screen_items['player_chow_option_buttons'].extend(chow_option_buttons)
+
+    def get_screen_items(self):
+        return self.screen_items

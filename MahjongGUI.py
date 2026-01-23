@@ -81,6 +81,7 @@ class MahjongGUI:
             self.sprites.empty()
 
         # Draw tiles and other game elements here
+        self.game_env.refresh_screen_items()
         screen_items = self.game_env.get_screen_items()
 
         # Discard pool display
@@ -112,6 +113,11 @@ class MahjongGUI:
         for button in on_draw_action_buttons:
             self.ui_sprites.add(button)
         
+        # Player chow option buttons display
+        chow_option_buttons = screen_items['player_chow_option_buttons']
+        for button in chow_option_buttons:
+            self.ui_sprites.add(button)
+
         self.sprites.draw(self.screen)
         self.ui_sprites.draw(self.screen)
 
