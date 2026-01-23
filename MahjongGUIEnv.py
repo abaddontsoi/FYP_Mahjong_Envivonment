@@ -3,10 +3,13 @@ import MahjongTiles
 from PlayerGUI import PlayerGUI
 from BotPlayerGUI import BotPlayerGUI
 import pygame
+from ActionButton import ActionButton
+
 
 game_states = ['initializing_round', 
                'player_drawing_from_deck', 
                'checking_on_draw_action',
+               'player_take_on_draw_action',
                'waiting_discard', 
                'pooling_for_action', 
                'player_take_action',
@@ -35,6 +38,7 @@ class MahjongGUIEnv:
         self.event_buffer = None
         self.game_state = None
         self.call_actions = []
+        self.current_player_on_draw_actions = []
 
     def assign_game_loop(self, game_loop):
         self.game_loop = game_loop
@@ -85,7 +89,22 @@ class MahjongGUIEnv:
 
             # Draw initial 13 tiles for each player
             for player in self.players:
-                initial_tiles = [self.deck.pop() for _ in range(13)]
+                # initial_tiles = [self.deck.pop() for _ in range(13)]
+                initial_tiles = [
+                    MahjongTiles.MahjongTiles(1),
+                    MahjongTiles.MahjongTiles(1),
+                    MahjongTiles.MahjongTiles(1),
+                    MahjongTiles.MahjongTiles(1),
+                    MahjongTiles.MahjongTiles(2),
+                    MahjongTiles.MahjongTiles(3),
+                    MahjongTiles.MahjongTiles(4),
+                    MahjongTiles.MahjongTiles(5),
+                    MahjongTiles.MahjongTiles(6),
+                    MahjongTiles.MahjongTiles(7),
+                    MahjongTiles.MahjongTiles(8),
+                    MahjongTiles.MahjongTiles(9),
+                    MahjongTiles.MahjongTiles(10),
+                ]
                 player.draw_tiles(initial_tiles)
             
             # Debug: View each player's hand
@@ -112,6 +131,74 @@ class MahjongGUIEnv:
 
         if self.game_state == 'checking_on_draw_action':
             # Check for self-drawn winning/additional kong/hidden kong action
+            on_draw_actions = self.players[self.current_player].check_on_draw_action()
+            if on_draw_actions and self.players[self.current_player].__class__ is PlayerGUI:
+                self.current_player_on_draw_actions = on_draw_actions
+                self.game_state = 'player_take_on_draw_action'
+                print(f"Player {self.players[self.current_player].id} on draw actions: {self.current_player_on_draw_actions}")
+            else:
+                self.game_state = 'waiting_discard'
+        
+        if self.game_state == 'player_take_on_draw_action':
+            print(f"Player {self.players[self.current_player].id} is taking an on draw action.")
+            # Create action buttons for the player
+            action_player = self.current_player
+            if self.players[action_player].__class__ is BotPlayerGUI:
+                chosen_action = self.players[action_player].decide_on_draw_action(self.current_player_on_draw_actions)
+                print(f"Player {self.players[action_player].id} chose action: {chosen_action}")
+                
+                # Handle action
+                if chosen_action == 'win':
+                    self.end_round = True
+                    print(f"Player {self.players[action_player].id} wins!")
+                    self.game_state = 'ending_round'
+                elif chosen_action == 'additional kong':
+                    self.players[action_player].additional_kong()
+                    # Draw 1 tile
+                    self.players[action_player].draw_tiles([self.deck.pop(0)])
+                    self.game_state = 'checking_on_draw_action'
+                elif chosen_action == 'hidden kong':
+                    self.players[action_player].hidden_kong()
+                    # Draw 1 tile
+                    self.players[action_player].draw_tiles([self.deck.pop(0)])
+                    self.game_state = 'checking_on_draw_action'
+                elif chosen_action == 'pass':
+                    self.game_state = 'waiting_discard'
+            elif self.event_buffer is not None and self.event_buffer.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = self.event_buffer.pos
+                current_player = self.players[action_player]
+                button_start_x = 500  # Centered
+                button_y = 1000 - (self.current_player) * (current_player.hand[0].rect.height + 20) - 50
+                button_width, button_height = 100, 50
+                for btn_idx, action in enumerate(self.current_player_on_draw_actions):
+                    btn_x = button_start_x + btn_idx * 120
+                    btn_rect = pygame.Rect(btn_x, button_y, button_width, button_height)
+                    if btn_rect.collidepoint(mouse_pos):
+                        chosen_action = action
+                        print(f"Player {current_player.id} chose action: {chosen_action}")
+
+                        # Handle action
+                        if chosen_action == 'win':
+                            self.end_round = True
+                            print(f"Player {current_player.id} wins!")
+                            self.game_state = 'ending_round'
+                        elif chosen_action == 'additional kong':
+                            current_player.additional_kong()
+                            # Draw 1 tile
+                            current_player.draw_tiles([self.deck.pop(0)])
+                            self.game_state = 'waiting_discard'
+                        elif chosen_action == 'hidden kong':
+                            current_player.hidden_kong()
+                            # Draw 1 tile
+                            current_player.draw_tiles([self.deck.pop(0)])
+                            self.game_state = 'waiting_discard'
+                        elif chosen_action == 'pass':
+                            self.game_state = 'waiting_discard'
+                        
+                        self.event_buffer = None
+                        break
+            
+            self.current_player_on_draw_actions = []
             self.game_state = 'waiting_discard'
         
         if self.game_state == 'waiting_discard':
@@ -284,7 +371,8 @@ class MahjongGUIEnv:
             'players': [],
             'players_called_tuples': [],
             'discard_pool': [],
-            'player_action_buttons': []
+            'player_action_buttons': [],
+            'player_on_draw_action_buttons': [],
         }
 
         for idx, player in enumerate(self.players):
@@ -309,19 +397,6 @@ class MahjongGUIEnv:
         if self.discard_buffer:
             self.discard_buffer.rect.topleft = (50 + (len(self.discard_pool) % 20) * (self.discard_buffer.rect.width + 5), 50 + (len(self.discard_pool) //20) * (self.discard_buffer.rect.height + 5))
             screen_items['discard_pool'].append(self.discard_buffer)
-
-
-        class ActionButton(pygame.sprite.Sprite):
-            def __init__(self, action, rect):
-                super().__init__()
-                self.action = action
-                self.image = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
-                self.image.fill((200, 200, 200))
-                font = pygame.font.SysFont(None, 20)
-                text_surf = font.render(str(action), True, (0, 0, 0))
-                text_rect = text_surf.get_rect(center=(rect.width//2, rect.height//2))
-                self.image.blit(text_surf, text_rect)
-                self.rect = rect
         
         # Create action buttons for each player based on call_actions
         for idx, actions in enumerate(self.call_actions):
@@ -340,4 +415,22 @@ class MahjongGUIEnv:
                 
             screen_items['player_action_buttons'].extend(player_buttons)
         
+        
+        # Create action buttons for current player's on draw actions
+        if self.current_player_on_draw_actions:
+            action_player = self.current_player
+            hand_y = 1000 - (action_player) * (self.players[action_player].hand[0].rect.height + 20) - 50
+            button_start_x = 1000  # Centered
+            button_y = hand_y
+            button_width, button_height = 100, 50
+            
+            on_draw_buttons = []
+            for btn_idx, action in enumerate(self.current_player_on_draw_actions):
+                btn_x = button_start_x + btn_idx * 120
+                btn_rect = pygame.Rect(btn_x, button_y, button_width, button_height)
+                button = ActionButton(action, btn_rect)
+                on_draw_buttons.append(button)
+                
+            screen_items['player_on_draw_action_buttons'].extend(on_draw_buttons)
+            
         return screen_items

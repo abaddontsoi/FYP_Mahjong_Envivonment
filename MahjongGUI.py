@@ -106,6 +106,11 @@ class MahjongGUI:
         action_buttons = screen_items['player_action_buttons']
         for button in action_buttons:
             self.ui_sprites.add(button)
+            
+        # Player on-draw action buttons display
+        on_draw_action_buttons = screen_items['player_on_draw_action_buttons']
+        for button in on_draw_action_buttons:
+            self.ui_sprites.add(button)
         
         self.sprites.draw(self.screen)
         self.ui_sprites.draw(self.screen)

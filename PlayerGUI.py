@@ -25,22 +25,22 @@ class PlayerGUI:
         print(self.get_hand_as_string())
         print(self.get_called_tuples_as_string())
 
-    def display_current_discards(self):
-        discard_pool = self.game_env.get_pool_and_buffer()
+    # def display_current_discards(self):
+    #     discard_pool = self.game_env.get_pool_and_buffer()
         
-        if not discard_pool:
-            return 
+    #     if not discard_pool:
+    #         return 
         
-        print("="*20 + "Discard Pool" + "="*20)
-        counter = 10
-        for tile in discard_pool:
-            print(tile.tile_class_info[1], end=' ')
-            counter -= 1
-            if counter == 0:
-                print()
-                counter = 10
-        print()
-        print("=" * 50)
+    #     print("="*20 + "Discard Pool" + "="*20)
+    #     counter = 10
+    #     for tile in discard_pool:
+    #         print(tile.tile_class_info[1], end=' ')
+    #         counter -= 1
+    #         if counter == 0:
+    #             print()
+    #             counter = 10
+    #     print()
+    #     print("=" * 50)
 
     def get_hand_as_string(self):
         return ' '.join([t.tile_class_info[1] for t in self.hand])
@@ -85,69 +85,69 @@ class PlayerGUI:
         self.hand = []
         self.called_tuples = []
     
-    def call_response(self, call_tile: MahjongTiles.MahjongTiles, chow_allowed = False):
-        available_actions = []
-        # Put those selected mahjong tiles to self.called_tuples, responses are: 
-        # 'win'
-        if self.check_win(call_tile):
-            available_actions.append('win')
+    # def call_response(self, call_tile: MahjongTiles.MahjongTiles, chow_allowed = False):
+    #     available_actions = []
+    #     # Put those selected mahjong tiles to self.called_tuples, responses are: 
+    #     # 'win'
+    #     if self.check_win(call_tile):
+    #         available_actions.append('win')
 
-        # 'kong'
-        call_tile_id = call_tile.classId
-        count = 0
-        for t in self.hand:
-            if t.classId == call_tile_id:
-                count += 1
-        if count == 3:
-            available_actions.append('kong')
+    #     # 'kong'
+    #     call_tile_id = call_tile.classId
+    #     count = 0
+    #     for t in self.hand:
+    #         if t.classId == call_tile_id:
+    #             count += 1
+    #     if count == 3:
+    #         available_actions.append('kong')
         
-        # 'pong'
-        count = 0
-        for t in self.hand:
-            if t.classId == call_tile_id:
-                count += 1
-        if count >= 2:
-            available_actions.append('pong')
+    #     # 'pong'
+    #     count = 0
+    #     for t in self.hand:
+    #         if t.classId == call_tile_id:
+    #             count += 1
+    #     if count >= 2:
+    #         available_actions.append('pong')
         
-        # 'chow'
-        if call_tile.tile_suit != 'z' and chow_allowed: # 'z' suit not allow to 'chow'
-            same_suit_tiles_idx = []
-            for i in range(len(self.hand)):
-                if self.hand[i].tile_suit != call_tile.tile_suit:
-                    continue
-                else:
-                    target_idx = self.find_first_by_number(self.hand[i].tile_number, call_tile.tile_suit)
-                    if target_idx > -1:
-                        same_suit_tiles_idx.append(target_idx)
+    #     # 'chow'
+    #     if call_tile.tile_suit != 'z' and chow_allowed: # 'z' suit not allow to 'chow'
+    #         same_suit_tiles_idx = []
+    #         for i in range(len(self.hand)):
+    #             if self.hand[i].tile_suit != call_tile.tile_suit:
+    #                 continue
+    #             else:
+    #                 target_idx = self.find_first_by_number(self.hand[i].tile_number, call_tile.tile_suit)
+    #                 if target_idx > -1:
+    #                     same_suit_tiles_idx.append(target_idx)
             
-            same_suit_tiles_idx = set(same_suit_tiles_idx)
-            same_suit_tiles_idx = list(same_suit_tiles_idx)
-            same_suit_tiles_idx.sort()
+    #         same_suit_tiles_idx = set(same_suit_tiles_idx)
+    #         same_suit_tiles_idx = list(same_suit_tiles_idx)
+    #         same_suit_tiles_idx.sort()
 
-            chow_options = []
-            if len(same_suit_tiles_idx) >= 2:
-                for i in range(1, len(same_suit_tiles_idx)):
-                    chow_valid = self.chow_check([self.hand[same_suit_tiles_idx[i]], self.hand[same_suit_tiles_idx[i - 1]]], call_tile)
-                    if chow_valid:
-                        chow_options.append(
-                            (
-                                same_suit_tiles_idx[i],
-                                same_suit_tiles_idx[i - 1]
-                            )
-                        )
+    #         chow_options = []
+    #         if len(same_suit_tiles_idx) >= 2:
+    #             for i in range(1, len(same_suit_tiles_idx)):
+    #                 chow_valid = self.chow_check([self.hand[same_suit_tiles_idx[i]], self.hand[same_suit_tiles_idx[i - 1]]], call_tile)
+    #                 if chow_valid:
+    #                     chow_options.append(
+    #                         (
+    #                             same_suit_tiles_idx[i],
+    #                             same_suit_tiles_idx[i - 1]
+    #                         )
+    #                     )
 
-            if chow_options:
-                available_actions.append('chow')
+    #         if chow_options:
+    #             available_actions.append('chow')
             
-        # Add a 'pass' option
-        # Choose action
-        if available_actions:
-            available_actions.append('pass')
-            self.display_current_discards()
-            self.display_hand()
-            return self.safe_get_option(available_actions, f"{str(available_actions)}: ")
+    #     # Add a 'pass' option
+    #     # Choose action
+    #     if available_actions:
+    #         available_actions.append('pass')
+    #         self.display_current_discards()
+    #         self.display_hand()
+    #         return self.safe_get_option(available_actions, f"{str(available_actions)}: ")
         
-        return False
+    #     return False
     
     def check_possible_calls(self, call_tile: MahjongTiles.MahjongTiles, chow_allowed = False):
         actions = []
@@ -321,6 +321,34 @@ class PlayerGUI:
             
         return False
     
+    def check_on_draw_action(self):
+        actions = []
+        # check self drawn
+        if self.check_win():
+            actions.append('self_drawn')
+        
+        # check additional kong
+        for tile in self.hand:
+            for tuple in self.called_tuples:
+                if tuple[0].classId == tile.classId and self.check_tuple_type(tuple) == 'pong':
+                    # Possible additional kong exists
+                    actions.append('additional kong')
+                    break
+
+        # check hidden kong
+        if len(self.hand) >= 4:
+            for idx in range(3, len(self.hand)):
+                tuple = (self.hand[idx], self.hand[idx - 1], self.hand[idx - 2], self.hand[idx - 3])
+                tuple_type = self.check_tuple_type(tuple)
+                if tuple_type == 'kong':
+                    actions.append('hidden kong')
+                    break
+        
+        if actions:
+            actions.append('pass')
+        
+        return actions
+    
     def self_drawn(self):
         options = ['self drawn', 'pass']
         if self.check_win():
@@ -424,7 +452,6 @@ class PlayerGUI:
         # set each tile's x-position based on index
         for idx, tile in enumerate(self.hand):
             tile.rect.topleft = (50 + idx * tile.rect.width, 1000)
-
 
     def align_called_tuple_sprites(self):
         # Set called tuples' positions
