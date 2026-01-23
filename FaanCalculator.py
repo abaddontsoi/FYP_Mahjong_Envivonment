@@ -32,9 +32,9 @@ class FaanCalculator:
         'havenly_hand': 10,
         'earthly_hand': 10,
     }
-    def __init__(self, hand, called_tile, round = 0, position = 0):
-        self.hand = hand
-        self.called_tile = called_tile
+    def __init__(self, round = 0, position = 0):
+        self.hand = []
+        self.called_tile = []
         self.round = round
         self.position = position
     
@@ -42,7 +42,7 @@ class FaanCalculator:
         self.hand = hand
         self.called_tile = called_tile
 
-    def check_tuple_type(self, tuple: tuple[MahjongTiles.MahjongTiles]):
+    def check_tuple_type(self, tuple: tuple[MahjongTiles]):
         if len(tuple) == 4:
             if tuple[0].classId == tuple[1].classId == tuple[2].classId == tuple[3].classId:
                 return 'kong'
@@ -50,7 +50,9 @@ class FaanCalculator:
             if tuple[0].classId == tuple[1].classId == tuple[2].classId:
                 return 'pong'
             if tuple[2].tile_number == tuple[1].tile_number + 1 and tuple[1].tile_number == tuple[0].tile_number + 1:
-                return 'chow'
+                if tuple[0].tile_suit == tuple[1].tile_suit == tuple[2].tile_suit:
+                    return 'chow'
+        
         return None
 
     def get_tuples_from_hand(self):

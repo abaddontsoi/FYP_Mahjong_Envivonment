@@ -1,4 +1,5 @@
 import MahjongTiles
+from FaanCalculator import FaanCalculator
 
 class PlayerGUI:
     def __init__(self, id = None):
@@ -7,6 +8,9 @@ class PlayerGUI:
         self.id = id
         self.called_tuples = []
         self.round_position = -1
+
+        # Each player's faan calculator
+        self.faan_calculator = FaanCalculator()
 
     def assign_env(self, env):
         self.game_env = env
@@ -17,13 +21,7 @@ class PlayerGUI:
     def draw_tiles(self, tiles: list[MahjongTiles.MahjongTiles]):
         self.hand += tiles
         self.sort_hand()
-
-        # self.additional_kong()
-        # self.hidden_kong()
-
-    def display_hand(self):
-        print(self.get_hand_as_string())
-        print(self.get_called_tuples_as_string())
+        self.faan_calculator.update_hand_and_called_tile(self.hand, self.called_tuples)
 
     def get_hand_as_string(self):
         return ' '.join([t.tile_class_info[1] for t in self.hand])
@@ -35,18 +33,12 @@ class PlayerGUI:
             tuples_as_string.append(' '.join(temp))
         return '\n'.join(tuples_as_string)
 
+    def display_hand(self):
+        print(self.get_hand_as_string())
+        print(self.get_called_tuples_as_string())
+
     def check_tuple_type(self, tuple: tuple[MahjongTiles.MahjongTiles]):
-        if len(tuple) == 4:
-            if tuple[0].classId == tuple[1].classId == tuple[2].classId == tuple[3].classId:
-                return 'kong'
-        if len(tuple) == 3:
-            if tuple[0].classId == tuple[1].classId == tuple[2].classId:
-                return 'pong'
-            if tuple[2].tile_number == tuple[1].tile_number + 1 and tuple[1].tile_number == tuple[0].tile_number + 1:
-                if tuple[0].tile_suit == tuple[1].tile_suit == tuple[2].tile_suit:
-                    return 'chow'
-        
-        return None
+        return self.faan_calculator.check_tuple_type(tuple)
 
     def safe_get_option(self, options: list, prompt: str):
         while True:
@@ -61,13 +53,45 @@ class PlayerGUI:
                 print("Index out of range, try again.")
 
     def discard(self):
-        self.display_current_discards()
-        self.display_hand()
-        return self.safe_get_option(self.hand, "Input index to discard: ")
+        ...
 
     def clear_hand(self):
         self.hand = []
         self.called_tuples = []
+        self.faan_calculator.update_hand_and_called_tile(self.hand, self.called_tuples)
+
+    def find_first_by_number(self, tile_number: int, suit, provided_list: list[MahjongTiles.MahjongTiles] = None):
+        if not provided_list:
+            for i in range(len(self.hand)):
+                if self.hand[i].tile_number == tile_number:
+                    if self.hand[i].tile_suit == suit:
+                        return i
+        else:
+            for i in range(len(provided_list)):
+                if provided_list[i].tile_number == tile_number:
+                    if provided_list[i].tile_suit == suit:
+                        return i
+        return -1
+    
+    def find_first_by_classId(self, classId: int, provided_list: list[MahjongTiles.MahjongTiles] = None):
+        if not provided_list:
+            for i in range(len(self.hand)):
+                if self.hand[i].classId == classId:
+                    return i
+        else:
+            for i in range(len(provided_list)):
+                if provided_list[i].classId == classId:
+                    return i
+        return -1
+
+    def simplify_hand(self):
+        # Return a list where each tile is unique on classId
+        unique_tiles = []
+        unique_tiles.append(self.hand[0])
+        for i in range(1, len(self.hand)):
+            if self.hand[i].classId != self.hand[i - 1].classId:
+                unique_tiles.append(self.hand[i])
+        return unique_tiles
         
     def check_possible_calls(self, call_tile: MahjongTiles.MahjongTiles, chow_allowed = False):
         actions = []
@@ -124,30 +148,6 @@ class PlayerGUI:
                 actions.append('chow')
         
         return actions
-
-    def find_first_by_number(self, tile_number: int, suit, provided_list: list[MahjongTiles.MahjongTiles] = None):
-        if not provided_list:
-            for i in range(len(self.hand)):
-                if self.hand[i].tile_number == tile_number:
-                    if self.hand[i].tile_suit == suit:
-                        return i
-        else:
-            for i in range(len(provided_list)):
-                if provided_list[i].tile_number == tile_number:
-                    if provided_list[i].tile_suit == suit:
-                        return i
-        return -1
-    
-    def find_first_by_classId(self, classId: int, provided_list: list[MahjongTiles.MahjongTiles] = None):
-        if not provided_list:
-            for i in range(len(self.hand)):
-                if self.hand[i].classId == classId:
-                    return i
-        else:
-            for i in range(len(provided_list)):
-                if provided_list[i].classId == classId:
-                    return i
-        return -1
 
     # length must be multiple of 3, max 12
     def count_tuples(self, remaining: list[MahjongTiles.MahjongTiles]):
@@ -336,31 +336,32 @@ class PlayerGUI:
         if len(self.hand) < 2:
             return chow_options
         
-        for i in range(1, len(self.hand)):
-            if self.hand[i].tile_suit != call_tile.tile_suit:
+        simplyfied_hand = self.simplify_hand()
+        for i in range(1, len(simplyfied_hand)):
+            if simplyfied_hand[i].tile_suit != call_tile.tile_suit:
                 continue
             else:
-                tuple_type = self.check_tuple_type(sorted([self.hand[i - 1], self.hand[i], call_tile], key=lambda x: x.classId))
+                tuple_type = self.check_tuple_type(sorted([simplyfied_hand[i - 1], simplyfied_hand[i], call_tile], key=lambda x: x.classId))
                 if tuple_type == 'chow':
                     chow_options.append(
                         (
-                            self.hand[i - 1],
-                            self.hand[i]
+                            simplyfied_hand[i - 1],
+                            simplyfied_hand[i]
                         )
                     )
                 # Also check non-consecutive tiles
-                tuple_type = self.check_tuple_type(sorted([self.hand[i - 2], self.hand[i], call_tile], key=lambda x: x.classId))
+                tuple_type = self.check_tuple_type(sorted([simplyfied_hand[i - 2], simplyfied_hand[i], call_tile], key=lambda x: x.classId))
                 if i - 2 >= 0 and tuple_type == 'chow':
                     chow_options.append(
                         (
-                            self.hand[i - 2],
-                            self.hand[i]
+                            simplyfied_hand[i - 2],
+                            simplyfied_hand[i]
                         )
                     )
         return chow_options
     
     def chow(self, call_tile: MahjongTiles.MahjongTiles, chosen_option: tuple):
-        chow_tiles = [chosen_option[0], chosen_option[1]]
+        chow_tiles = list(chosen_option)
         self.hand = [t for t in self.hand if t not in chosen_option]
         chow_tiles.append(call_tile)
         self.called_tuples.append(tuple(chow_tiles))
