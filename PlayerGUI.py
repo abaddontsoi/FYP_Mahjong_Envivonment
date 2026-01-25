@@ -52,9 +52,6 @@ class PlayerGUI:
             except IndexError:
                 print("Index out of range, try again.")
 
-    def discard(self):
-        ...
-
     def clear_hand(self):
         self.hand = []
         self.called_tuples = []

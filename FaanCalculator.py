@@ -62,6 +62,8 @@ class FaanCalculator:
     def get_tuples_from_hand(self):
         ...
 
+
+    # For detecting Faan, assume the hand is a complete hand (4 tuples + 1 pair/13 orphans)
     def no_call(self):
         if self.called_tuples:
             return False
@@ -161,32 +163,66 @@ class FaanCalculator:
     def mixed_orphans(self):
         # Valid pong class
         valid_pong_classes = [1, 9, 10, 18, 19, 27, 28, 29, 30, 31, 32, 33, 34]
-
-        for t in self.called_tuples:
-            if self.check_tuple_type(t) != 'pong':
-                return False
-            if self.check_tuple_type(t) == 'pong':
-                if t[0].classId not in valid_pong_classes:
-                    return False
-
-        if len(self.hand) < 2:
+        
+        # Must be all pong hand
+        if not self.all_pong_hand():
             return False
-
-        # Check any pairs in hand is not in valid pong classes
-        for i in range(1, len(self.hand)):
-            if self.hand[i].classId == self.hand[i - 1].classId:
-                if self.hand[i].classId not in valid_pong_classes:
-                    return False
-                
-        # Check any pong shape in hand is not in valid pong classes
-        for i in range(2, len(self.hand)):
-            if self.hand[i].classId == self.hand[i - 1].classId == self.hand[i - 2].classId:
-                if self.hand[i].classId not in valid_pong_classes:
-                    return False
-
+        
+        for t in self.called_tuples:
+            if t[0].classId not in valid_pong_classes:
+                return False
+        
+        for t in self.hand:
+            if t.classId not in valid_pong_classes:
+                return False
+        
         return True
 
+    def all_chow_hand_helper(self, remaining_hand):
+        if not remaining_hand:
+            return True
+        
+        for i in range(len(remaining_hand)):
+            first_tile = remaining_hand[i]
+            # Try to form a chow with first_tile
+            second_tile_number = first_tile.tile_number + 1
+            third_tile_number = first_tile.tile_number + 2
+            second_tile = None
+            third_tile = None
+
+            for j in range(len(remaining_hand)):
+                if remaining_hand[j].tile_suit == first_tile.tile_suit:
+                    if remaining_hand[j].tile_number == second_tile_number:
+                        second_tile = remaining_hand[j]
+                    elif remaining_hand[j].tile_number == third_tile_number:
+                        third_tile = remaining_hand[j]
+            
+            if second_tile and third_tile:
+                # Formed a chow, remove these tiles and continue
+                new_remaining_hand = remaining_hand.copy()
+                new_remaining_hand.remove(first_tile)
+                new_remaining_hand.remove(second_tile)
+                new_remaining_hand.remove(third_tile)
+                
+                if self.all_chow_hand_helper(new_remaining_hand):
+                    return True
+        
+        return False
+
     def all_chow_hand(self):
+        for t in self.called_tuples:
+            if self.check_tuple_type(t) != 'chow':
+                return False
+        
+        for i in range(1, len(self.hand)):
+            # Finding pair in hand
+            if self.hand[i].classId == self.hand[i - 1].classId:
+                # Found pair, remove and check remaining tiles
+                pair= (self.hand[i - 1], self.hand[i])
+                remaining = [t for t in self.hand if t not in pair]
+                if self.all_chow_hand_helper(remaining):
+                    return True
+
         return False
 
     def robbing_additional_kong(self):
@@ -199,7 +235,44 @@ class FaanCalculator:
         return False
 
     def all_pong_hand(self):
-        return False
+        # Consists of all pong/kong tuples and a pair
+        for t in self.called_tuples:
+            if self.check_tuple_type(t) != 'pong' and self.check_tuple_type(t) != 'kong':
+                return False
+            
+        # Find out the only pair in hand
+        pair_found = False
+        pair = None
+        if len(self.hand) == 2:
+            if self.hand[0].classId == self.hand[1].classId:
+                pair_found = True
+                pair = (self.hand[0], self.hand[1])
+        
+        if not pair_found:
+            for i in range(1, len(self.hand)):
+                if self.hand[i].classId == self.hand[i - 1].classId:
+                    if i - 2 >= 0:
+                        if self.hand[i - 1].classId == self.hand[i - 2].classId:
+                            continue
+                    if i + 1 < len(self.hand):
+                        if self.hand[i].classId == self.hand[i + 1].classId:
+                            continue
+                    pair_found = True
+                    pair = (self.hand[i - 1], self.hand[i])
+                    break
+
+        if not pair_found:
+            return False
+        
+        # Check remaining tiles are all pong/kong
+        remaining_tiles = [tile for tile in self.hand if tile not in pair]
+        for i in range(0, len(remaining_tiles), 3):
+            if i + 2 >= len(remaining_tiles):
+                return False
+            if remaining_tiles[i].classId != remaining_tiles[i + 1].classId or remaining_tiles[i].classId != remaining_tiles[i + 2].classId:
+                return False
+
+        return True
 
     def clean_hand(self):
         return False
@@ -305,4 +378,9 @@ class FaanCalculator:
     def four_hidden_pong(self):
         if not self.no_call():
             return False
+        
+        if self.all_pong_hand():
+            return True
+        
+        return False
     
