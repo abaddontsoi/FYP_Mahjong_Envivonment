@@ -216,6 +216,29 @@ class TestPlayer(unittest.TestCase):
         win = self.player.check_win(MahjongTiles(1))
         self.assertTrue(win)
 
+    def test_check_win_4_same_chow(self):
+        self.player.hand = [
+            MahjongTiles(1),
+            MahjongTiles(1),
+            MahjongTiles(1),
+            MahjongTiles(1),
+            MahjongTiles(2),
+            MahjongTiles(2),
+            MahjongTiles(2),
+            MahjongTiles(2),
+            MahjongTiles(3),
+            MahjongTiles(3),
+            MahjongTiles(3),
+            MahjongTiles(3),
+            MahjongTiles(4),
+        ]
+        self.player.hand.sort(key= lambda x: x.classId)
+        self.player.called_tuples = []
+
+        win = self.player.check_win(MahjongTiles(4))
+        self.assertTrue(win)
+
+
     # 13 Orphans
     def test_check_win_13_orphans(self):
         self.player.hand = [

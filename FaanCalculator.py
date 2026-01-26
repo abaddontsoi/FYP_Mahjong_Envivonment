@@ -62,8 +62,91 @@ class FaanCalculator:
     def get_tuples_from_hand(self):
         ...
 
+    def find_first_by_classId(self, classId: int, provided_list: list[MahjongTiles] = None):
+        if not provided_list:
+            for i in range(len(self.hand)):
+                if self.hand[i].classId == classId:
+                    return i
+        else:
+            for i in range(len(provided_list)):
+                if provided_list[i].classId == classId:
+                    return i
+        return -1
 
-    # For detecting Faan, assume the hand is a complete hand (4 tuples + 1 pair/13 orphans)
+    # length must be multiple of 3, max 12
+    def count_tuples(self, remaining: list[MahjongTiles]):
+        if not remaining or (len(remaining) % 3 != 0) or len(remaining) > 12:
+            return 0
+            
+        # Filter out first pong
+        pong_idx = None
+        for i in range(2, len(remaining)):
+            if remaining[i].classId == remaining[i-1].classId == remaining[i - 2].classId:
+                pong_idx = i
+                break
+        # 'pong' exists case
+        if pong_idx:
+            return 1 + self.count_tuples(
+                [t for idx, t in enumerate(remaining) if idx not in range(pong_idx - 2, pong_idx + 1)]
+            )
+        else:
+            # No 'pong' exists case
+            # Permutate and check for all possible chows
+            for i in range(3, 28):
+                tile_indices = []
+                first_chow_tile_idx = self.find_first_by_classId(i - 2, remaining)
+                second_chow_tile_idx = self.find_first_by_classId(i - 1, remaining)
+                third_chow_tile_idx = self.find_first_by_classId(i, remaining)
+                
+                if first_chow_tile_idx != -1 and second_chow_tile_idx != -1 and third_chow_tile_idx != -1:
+                    tile_indices = [first_chow_tile_idx, second_chow_tile_idx, third_chow_tile_idx]
+                    tiles = sorted([t for idx, t in enumerate(remaining) if idx in tile_indices], key= lambda x: x.classId)
+                    tiles = tuple(tiles)
+                    
+                    tuple_type = self.check_tuple_type(tiles)
+                    if tuple_type != None:
+                        return 1 + self.count_tuples([t for t in remaining if t not in tiles])
+            
+            return 0
+
+
+    def is_valid_winning_hand(self):
+        # Insert to hand
+        remaining = self.hand
+        remaining.sort(key= lambda x: x.classId)
+        
+        # Special winning cases
+        # 13 Orphans
+        if self.thirteen_orphans():
+            return True
+        
+        # 2 Cases
+        required_tuples = 4 - len(self.called_tuples)
+
+
+        # Filter out 1 pair and check for remainings to see if they can form tuples
+        if len(remaining) > 1:
+            proposed_eye = []
+            for idx in range(1, len(remaining)):
+                if remaining[idx].classId == remaining[idx - 1].classId:
+                    proposed_eye.append(
+                        (remaining[idx - 1], remaining[idx])
+                    )
+
+            for eye in proposed_eye:
+                tuple_count = self.count_tuples([t for t in remaining if t not in eye])
+                if tuple_count == required_tuples:
+                    return True
+
+
+        # 2 tile remains in hand, must be the pair
+        if len(remaining) == 2:
+            if remaining[0].classId == remaining[1].classId:
+                return True
+
+        return False
+
+    # For detecting Faan, assume the hand is a complete valid winning hand (4 tuples + 1 pair/13 orphans)
     def no_call(self):
         if self.called_tuples:
             return False
@@ -179,34 +262,12 @@ class FaanCalculator:
         return True
 
     def all_chow_hand_helper(self, remaining_hand):
-        if not remaining_hand:
-            return True
-        
-        for i in range(len(remaining_hand)):
-            first_tile = remaining_hand[i]
-            # Try to form a chow with first_tile
-            second_tile_number = first_tile.tile_number + 1
-            third_tile_number = first_tile.tile_number + 2
-            second_tile = None
-            third_tile = None
-
-            for j in range(len(remaining_hand)):
-                if remaining_hand[j].tile_suit == first_tile.tile_suit:
-                    if remaining_hand[j].tile_number == second_tile_number:
-                        second_tile = remaining_hand[j]
-                    elif remaining_hand[j].tile_number == third_tile_number:
-                        third_tile = remaining_hand[j]
-            
-            if second_tile and third_tile:
-                # Formed a chow, remove these tiles and continue
-                new_remaining_hand = remaining_hand.copy()
-                new_remaining_hand.remove(first_tile)
-                new_remaining_hand.remove(second_tile)
-                new_remaining_hand.remove(third_tile)
-                
-                if self.all_chow_hand_helper(new_remaining_hand):
-                    return True
-        
+        next_chow, remaining = self.find_next_chow(remaining_hand)
+        if next_chow:
+            if not remaining:
+                return True
+            else:
+                return self.all_chow_hand_helper(remaining)
         return False
 
     def all_chow_hand(self):
@@ -275,24 +336,34 @@ class FaanCalculator:
         return True
 
     def clean_hand(self):
-        return False
+        flatten_and_combined = []
+        for t in self.called_tuples:
+            flatten_and_combined.extend(t)
+        flatten_and_combined.extend(self.hand)
+
+        # Sort the combined tiles
+        flatten_and_combined.sort(key=lambda x: x.classId)
+
+        first_suit = flatten_and_combined[0].tile_suit
+        for tile in flatten_and_combined:
+            if tile.tile_suit != first_suit and tile.tile_suit != 'z':
+                return False
+        
+        return True
 
     def little_dragon_hand(self):
         return False
 
     def pure_suit(self):
-        if not self.no_call():
-            flattened_called_tuples = [item for tup in self.called_tuples for item in tup]
-            full_hand = self.hand + flattened_called_tuples
-            for idx in range(1, len(self.hand)):
-                if self.hand[idx].tile_suit != full_hand[idx - 1].tile_suit:
-                    return False
-        else:
-            for idx in range(1, len(self.hand)):
-                if self.hand[idx].tile_suit != full_hand[idx - 1].tile_suit:
-                    return False
+        flattened_called_tuples = [item for tup in self.called_tuples for item in tup]
+        full_hand = self.hand + flattened_called_tuples
+        full_hand.sort(key=lambda x: x.classId)
+        first_suit = full_hand[0].tile_suit
+        for tile in full_hand:
+            if tile.tile_suit != first_suit:
+                return False
         
-        return False
+        return True
 
     def great_dragon_hand(self):
         white_found = False
@@ -355,25 +426,106 @@ class FaanCalculator:
         return True
 
     def all_winds_and_dragons(self):
+        # Must be all pong/kong hand    
+        if self.all_pong_hand() or self.all_kong_hand():
+            # Check all tiles are winds or dragons
+            for t in self.called_tuples:
+                if t[0].classId < 28:
+                    return False
+            return True
+        
         return False
 
-    def chained_1_to_9(self):
+    def nine_gates_to_haven(self):
         if not self.no_call():
             return False
 
     def thirteen_orphans(self):
         if not self.no_call():
             return False
+        
+        required_classId = {
+            1: 0, 
+            9: 0, 
+            10: 0, 18: 0, 19: 0, 27: 0,
+            28: 0, 29: 0, 30: 0, 31: 0, 32: 0, 33: 0, 34: 0
+        }
+        for tile in self.hand:
+            if tile.classId in required_classId:
+                required_classId[tile.classId] += 1
+        # Check all required tiles are present
+        for count in required_classId.values():
+            if count not in [1, 2]:
+                return False
+            
+        pair_count = 0
+        for count in required_classId.values():
+            if count == 2:
+                pair_count += 1
+
+        return pair_count == 1
 
     def little_4_winds_hand(self):
         return False
 
     def great_4_winds_hand(self):
-        return False
+        east_found = False
+        south_found = False
+        west_found = False
+        north_found = False
+
+        for t in self.called_tuples:
+            if self.check_tuple_type(t) == 'pong':
+                if t[0].classId == 28:
+                    east_found = True
+                elif t[0].classId == 29:
+                    south_found = True
+                elif t[0].classId == 30:
+                    west_found = True
+                elif t[0].classId == 31:
+                    north_found = True
+
+        # Early stop
+        if east_found and south_found and west_found and north_found:
+            # Check hand is a pair
+            if len(self.hand) != 2:
+                return False
+            if self.hand[0].classId == self.hand[1].classId:
+                return True
+
+        # Check hand tiles
+        for i in range(2, len(self.hand)):
+            if self.hand[i].classId == self.hand[i - 1].classId == self.hand[i - 2].classId:
+                if self.hand[i].classId == 28:
+                    east_found = True
+                elif self.hand[i].classId == 29:
+                    south_found = True
+                elif self.hand[i].classId == 30:
+                    west_found = True
+                elif self.hand[i].classId == 31:
+                    north_found = True
+
+        return east_found and south_found and west_found and north_found
 
     def all_kong_hand(self):
         if self.no_call():
             return False
+        
+        # Must have 4 kongs called
+        kong_count = 0
+        for t in self.called_tuples:
+            if self.check_tuple_type(t) == 'kong':
+                kong_count += 1
+        if kong_count != 4:
+            return False
+        
+        # Check hand is a pair
+        if len(self.hand) != 2:
+            return False
+        if self.hand[0].classId != self.hand[1].classId:
+            return False
+
+        return True
 
     def four_hidden_pong(self):
         if not self.no_call():
@@ -384,3 +536,25 @@ class FaanCalculator:
         
         return False
     
+    def find_next_chow(self, hand):
+        next_chow = None
+        remaining = hand
+        for idx, tile in enumerate(hand):
+            second_tile_number = tile.tile_number + 1
+            third_tile_number = tile.tile_number + 2
+            second_tile = None
+            third_tile = None
+
+            for j in range(len(hand)):
+                if hand[j].tile_suit == tile.tile_suit:
+                    if hand[j].tile_number == second_tile_number:
+                        second_tile = hand[j]
+                    elif hand[j].tile_number == third_tile_number:
+                        third_tile = hand[j]
+            
+            if second_tile and third_tile:
+                next_chow = (tile, second_tile, third_tile)
+                remaining = [t for t in hand if t not in next_chow]
+                break
+        
+        return next_chow, remaining
