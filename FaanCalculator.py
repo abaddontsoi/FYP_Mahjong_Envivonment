@@ -59,9 +59,6 @@ class FaanCalculator:
         
         return None
 
-    def get_tuples_from_hand(self):
-        ...
-
     def find_first_by_classId(self, classId: int, provided_list: list[MahjongTiles] = None):
         if not provided_list:
             for i in range(len(self.hand)):
@@ -108,7 +105,6 @@ class FaanCalculator:
                         return 1 + self.count_tuples([t for t in remaining if t not in tiles])
             
             return 0
-
 
     def is_valid_winning_hand(self):
         # Insert to hand
@@ -352,6 +348,57 @@ class FaanCalculator:
         return True
 
     def little_dragon_hand(self):
+        white = None
+        green = None
+        red = None
+
+        # Check for called tuples first
+        for t in self.called_tuples:
+            if self.check_tuple_type(t) == 'pong' or self.check_tuple_type(t) == 'kong':
+                if t[0].classId == 32:
+                    white = 'pong'
+                elif t[0].classId == 33:
+                    green = 'pong'
+                elif t[0].classId == 34:
+                    red = 'pong'
+
+        # Check hand tiles
+        if len(self.hand) == 2:
+            if self.hand[0].classId == self.hand[1].classId:
+                if self.hand[0].classId == 32:
+                    white = 'pair'
+                elif self.hand[0].classId == 33:
+                    green = 'pair'
+                elif self.hand[0].classId == 34:
+                    red = 'pair'
+        else:
+            white_count = self.count_by_classId(32)
+            green_count = self.count_by_classId(33)
+            red_count = self.count_by_classId(34)
+            if white_count == 2:
+                white = 'pair'
+            if green_count == 2:
+                green = 'pair'
+            if red_count == 2:
+                red = 'pair'
+            if white_count >=3:
+                white = 'pong'
+            if green_count >=3:
+                green = 'pong'
+            if red_count >=3:
+                red = 'pong'
+
+        # Greate dragon hand case, return False
+        if white == 'pong' and green == 'pong' and red == 'pong':
+            return False
+        
+        if any([
+            white == 'pong' and green == 'pong' and red == 'pair',
+            white == 'pong' and green == 'pair' and red == 'pong',
+            white == 'pair' and green == 'pong' and red == 'pong'
+        ]):
+            return True
+
         return False
 
     def pure_suit(self):
@@ -401,71 +448,162 @@ class FaanCalculator:
         # Valid pong class
         valid_pong_classes = [1, 9, 10, 18, 19, 27]
 
-        for t in self.called_tuples:
-            if self.check_tuple_type(t) != 'pong':
-                return False
-            if self.check_tuple_type(t) == 'pong':
-                if t[0].classId not in valid_pong_classes:
-                    return False
-
-        if len(self.hand) < 2:
+        # Must be all pong hand
+        if not self.all_pong_hand():
             return False
-
-        # Check any pairs in hand is not in valid pong classes
-        for i in range(1, len(self.hand)):
-            if self.hand[i].classId == self.hand[i - 1].classId:
-                if self.hand[i].classId not in valid_pong_classes:
-                    return False
-                
-        # Check any pong shape in hand is not in valid pong classes
-        for i in range(2, len(self.hand)):
-            if self.hand[i].classId == self.hand[i - 1].classId == self.hand[i - 2].classId:
-                if self.hand[i].classId not in valid_pong_classes:
-                    return False
+        
+        for t in self.called_tuples:
+            if t[0].classId not in valid_pong_classes:
+                return False
+            
+        for t in self.hand:
+            if t.classId not in valid_pong_classes:
+                return False
 
         return True
 
     def all_winds_and_dragons(self):
-        # Must be all pong/kong hand    
-        if self.all_pong_hand() or self.all_kong_hand():
-            # Check all tiles are winds or dragons
-            for t in self.called_tuples:
-                if t[0].classId < 28:
-                    return False
-            return True
+        # If classId < 28, return False
+        for t in self.called_tuples:
+            if t[0].classId < 28:
+                return False
+        for t in self.hand:
+            if t.classId < 28:
+                return False
         
-        return False
+        # Must be all pong/kong hand
+        if not self.all_pong_hand():
+            return False
+
+        return True
 
     def nine_gates_to_haven(self):
+        # Must have no call
         if not self.no_call():
             return False
+        
+        # Must be pure suit
+        if not self.pure_suit():
+            return False
+        
+        required_tile_number = {
+            1: 3, 
+            2: 1, 
+            3: 1, 
+            4: 1, 
+            5: 1,
+            6: 1, 
+            7: 1, 
+            8: 1, 
+            9: 3
+        }
+        for tile in self.hand:
+            if tile.tile_number in required_tile_number:
+                required_tile_number[tile.tile_number] -= 1
+            else:
+                return False
+
+        for count in required_tile_number.values():
+            if count > 0:
+                return False
+
+        if any(count < 0 for count in required_tile_number.values()):
+            return True
+
+        return False
 
     def thirteen_orphans(self):
         if not self.no_call():
             return False
         
         required_classId = {
-            1: 0, 
-            9: 0, 
-            10: 0, 18: 0, 19: 0, 27: 0,
-            28: 0, 29: 0, 30: 0, 31: 0, 32: 0, 33: 0, 34: 0
+            1: 1, 
+            9: 1, 
+            10: 1, 
+            18: 1, 
+            19: 1, 
+            27: 1,
+            28: 1, 
+            29: 1, 
+            30: 1, 
+            31: 1, 
+            32: 1, 
+            33: 1, 
+            34: 1
         }
         for tile in self.hand:
             if tile.classId in required_classId:
-                required_classId[tile.classId] += 1
-        # Check all required tiles are present
-        for count in required_classId.values():
-            if count not in [1, 2]:
+                required_classId[tile.classId] -= 1
+            else:
                 return False
-            
-        pair_count = 0
-        for count in required_classId.values():
-            if count == 2:
-                pair_count += 1
 
-        return pair_count == 1
+        for count in required_classId.values():
+            if count > 0:
+                return False
+
+        return True
 
     def little_4_winds_hand(self):
+        east = None
+        south = None
+        west = None
+        north = None
+
+        for t in self.called_tuples:
+            if self.check_tuple_type(t) == 'pong':
+                if t[0].classId == 28:
+                    east = 'pong'
+                elif t[0].classId == 29:
+                    south = 'pong'
+                elif t[0].classId == 30:
+                    west = 'pong'
+                elif t[0].classId == 31:
+                    north = 'pong'
+        
+        if len(self.hand) == 2:
+            if self.hand[0].classId == self.hand[1].classId:
+                if self.hand[0].classId == 28:
+                    east = 'pair'
+                elif self.hand[0].classId == 29:
+                    south = 'pair'
+                elif self.hand[0].classId == 30:
+                    west = 'pair'
+                elif self.hand[0].classId == 31:
+                    north = 'pair'
+        else:
+            east_count = self.count_by_classId(28)
+            south_count = self.count_by_classId(29)
+            west_count = self.count_by_classId(30)
+            north_count = self.count_by_classId(31)
+            if east_count == 2:
+                east = 'pair'
+            if south_count == 2:
+                south = 'pair'
+            if west_count == 2:
+                west = 'pair'
+            if north_count == 2:
+                north = 'pair'
+            if east_count >=3:
+                east = 'pong'
+            if south_count >=3:
+                south = 'pong'
+            if west_count >=3:
+                west = 'pong'
+            if north_count >=3:
+                north = 'pong'
+
+        # Great 4 winds hand case, return False
+        if east == 'pong' and south == 'pong' and west == 'pong' and north == 'pong':
+            return False
+
+        if any([
+            east == 'pong' and south == 'pong' and west == 'pong' and north == 'pair',
+            east == 'pong' and south == 'pong' and west == 'pair' and north == 'pong',
+            east == 'pong' and south == 'pair' and west == 'pong' and north == 'pong',
+            east == 'pair' and south == 'pong' and west == 'pong' and north == 'pong',
+        ]):
+            return True
+
         return False
 
     def great_4_winds_hand(self):
@@ -558,3 +696,10 @@ class FaanCalculator:
                 break
         
         return next_chow, remaining
+
+    def count_by_classId(self, classId: int):
+        count = 0
+        for tile in self.hand:
+            if tile.classId == classId:
+                count += 1
+        return count

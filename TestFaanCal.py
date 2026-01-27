@@ -14,12 +14,13 @@ class TestFaanCal(unittest.TestCase):
 
     def test_is_valid_winning_hand(self):
         self.calculator.hand = [
-            MahjongTiles(1), MahjongTiles(2), MahjongTiles(3),  # Chow
             MahjongTiles(4), MahjongTiles(4), MahjongTiles(4),  # Pong
+            MahjongTiles(1), MahjongTiles(2), MahjongTiles(3),  # Chow
             MahjongTiles(5), MahjongTiles(6), MahjongTiles(7),  # Chow
             MahjongTiles(5), MahjongTiles(6), MahjongTiles(7),  # Chow
             MahjongTiles(8), MahjongTiles(8)                     # Pair
         ]
+        self.calculator.hand.sort(key=lambda x: x.classId)
         self.assertTrue(self.calculator.is_valid_winning_hand())
 
     def test_red_white_green(self):
@@ -124,6 +125,60 @@ class TestFaanCal(unittest.TestCase):
         ]
         self.assertFalse(self.calculator.mixed_orphans())
 
+    def test_all_chow_hand(self):
+        # Called
+        self.calculator.called_tuples = [
+            (MahjongTiles(1), MahjongTiles(2), MahjongTiles(3)),  # Chow of 1-2-3 Characters
+            (MahjongTiles(2), MahjongTiles(3), MahjongTiles(4)),  # Chow of 2-3-4 Characters
+            (MahjongTiles(3), MahjongTiles(4), MahjongTiles(5))   # Chow of 3-4-5 Characters
+        ]
+        self.calculator.hand = [
+            MahjongTiles(4), MahjongTiles(5), MahjongTiles(6),  # Chow of 4-5-6 Characters
+            MahjongTiles(7), MahjongTiles(7)                     # Pair of 7 Characters
+        ]
+        self.calculator.hand.sort(key=lambda x: x.classId)
+        self.assertTrue(self.calculator.all_chow_hand())
+
+        # No call
+        self.calculator.called_tuples = []
+        self.calculator.hand = [
+            MahjongTiles(1), MahjongTiles(2), MahjongTiles(3),  # Chow of 1-2-3 Characters
+            MahjongTiles(30), MahjongTiles(30),                     # Pair of 7 Characters
+            MahjongTiles(2), MahjongTiles(3), MahjongTiles(4),  # Chow of 2-3-4 Characters
+            MahjongTiles(3), MahjongTiles(4), MahjongTiles(5),  # Chow of 3-4-5 Characters
+            MahjongTiles(4), MahjongTiles(5), MahjongTiles(6),  # Chow of 4-5-6 Characters
+        ]
+        self.calculator.hand.sort(key=lambda x: x.classId)  
+        self.assertTrue(self.calculator.all_chow_hand())
+
+    def test_all_chow_hand_false(self):
+        # Called
+        self.calculator.called_tuples = [
+            (MahjongTiles(1), MahjongTiles(2), MahjongTiles(3)),  # Chow of 1-2-3 Characters
+            (MahjongTiles(2), MahjongTiles(3), MahjongTiles(4)),  # Chow of 2-3-4 Characters
+            (MahjongTiles(4), MahjongTiles(4), MahjongTiles(4))
+        ]
+        self.calculator.hand = [
+            
+            MahjongTiles(3), MahjongTiles(4), MahjongTiles(5),
+            MahjongTiles(30), MahjongTiles(30)
+        ]
+        self.calculator.hand.sort(key=lambda x: x.classId)
+        self.assertFalse(self.calculator.all_chow_hand())
+
+        # No call
+        self.calculator.called_tuples = []
+        self.calculator.hand = [
+            MahjongTiles(1), MahjongTiles(2), MahjongTiles(3),  # Chow of 1-2-3 Characters
+            MahjongTiles(30), MahjongTiles(30),                     # Pair of 7 Characters
+            MahjongTiles(4), MahjongTiles(4), MahjongTiles(4),  # Chow of 2-3-4 Characters
+            MahjongTiles(3), MahjongTiles(4), MahjongTiles(5),  # Chow of 3-4-5 Characters
+            MahjongTiles(4), MahjongTiles(5), MahjongTiles(6),  # Chow of 4-5-6 Characters
+        ]
+        self.calculator.hand.sort(key=lambda x: x.classId)  
+        self.assertFalse(self.calculator.all_chow_hand())
+
+
     def test_all_pong_hand(self):
         self.calculator.called_tuples = [
             (MahjongTiles(1), MahjongTiles(1), MahjongTiles(1)),  # Pong of 1 Characters
@@ -200,6 +255,66 @@ class TestFaanCal(unittest.TestCase):
         self.assertTrue(self.calculator.is_valid_winning_hand())
         self.assertFalse(self.calculator.clean_hand())
 
+    def test_little_dragon_hand(self):
+        # No call
+        self.calculator.hand = [
+            MahjongTiles(32), MahjongTiles(32),  MahjongTiles(32), # Red Dragon Pong
+            MahjongTiles(33), MahjongTiles(33),  # White Dragon Pair
+            MahjongTiles(34), MahjongTiles(34),  MahjongTiles(34),  # Green Dragon Pong
+            MahjongTiles(5), MahjongTiles(6), MahjongTiles(7),  # Chow
+            MahjongTiles(8), MahjongTiles(8), MahjongTiles(8)  # Pair
+        ]
+        self.calculator.hand.sort(key=lambda x: x.classId)
+        self.assertTrue(self.calculator.little_dragon_hand())
+
+        # Called
+        self.calculator.called_tuples = [
+            (MahjongTiles(32), MahjongTiles(32),  MahjongTiles(32)), # Red Dragon Pong
+            (MahjongTiles(34), MahjongTiles(34), MahjongTiles(34),  MahjongTiles(34)), # Red Dragon Kong
+        ]
+        self.calculator.hand = [
+            MahjongTiles(33), MahjongTiles(33),  # White Dragon Pairg
+            MahjongTiles(5), MahjongTiles(6), MahjongTiles(7),  # Chow
+            MahjongTiles(8), MahjongTiles(8), MahjongTiles(8)  # Pair
+        ]
+        self.calculator.hand.sort(key=lambda x: x.classId)
+        self.assertTrue(self.calculator.little_dragon_hand())
+
+    def test_little_dragon_hand_false(self):
+        self.calculator.hand = [
+            MahjongTiles(32), MahjongTiles(32),  MahjongTiles(32), # Red Dragon Pong
+            MahjongTiles(33), MahjongTiles(33), MahjongTiles(33),  # White Dragon Pong
+            MahjongTiles(34), MahjongTiles(34),  MahjongTiles(34),  # Green Dragon Pong
+            MahjongTiles(5), MahjongTiles(6), MahjongTiles(7),  # Chow
+            MahjongTiles(8), MahjongTiles(8)  # Pair
+        ]
+        self.calculator.hand.sort(key=lambda x: x.classId)
+        self.assertFalse(self.calculator.little_dragon_hand())
+        
+        self.calculator.called_tuples = [
+            (MahjongTiles(32), MahjongTiles(32),  MahjongTiles(32)), # Red Dragon Pong
+            (MahjongTiles(33), MahjongTiles(33), MahjongTiles(33)),  # White Dragon Pong
+            (MahjongTiles(34), MahjongTiles(34),  MahjongTiles(34)),  # Green Dragon Pong
+        ]
+        self.calculator.hand = [
+            MahjongTiles(5), MahjongTiles(6), MahjongTiles(7),  # Chow
+            MahjongTiles(8), MahjongTiles(8)  # Pair
+        ]
+        self.calculator.hand.sort(key=lambda x: x.classId)
+        self.assertFalse(self.calculator.little_dragon_hand())
+
+        self.calculator.called_tuples = [
+            (MahjongTiles(32), MahjongTiles(32),  MahjongTiles(32)), # Red Dragon Pong
+            (MahjongTiles(34), MahjongTiles(34),  MahjongTiles(34)),  # Green Dragon Pong
+        ]
+        self.calculator.hand = [
+            MahjongTiles(5), MahjongTiles(6), MahjongTiles(7),  # Chow
+            MahjongTiles(13), MahjongTiles(14), MahjongTiles(15),  # Chow
+            MahjongTiles(8), MahjongTiles(8)  # Pair
+        ]
+        self.calculator.hand.sort(key=lambda x: x.classId)
+        self.assertFalse(self.calculator.little_dragon_hand())
+
     def test_pure_suit(self):
         self.calculator.called_tuples = [
             (MahjongTiles(1), MahjongTiles(2), MahjongTiles(3)),
@@ -213,9 +328,7 @@ class TestFaanCal(unittest.TestCase):
         self.assertTrue(self.calculator.is_valid_winning_hand())
         self.assertTrue(self.calculator.pure_suit())
 
-    def test_pure_suit_no_call(self):
-        self.calculator.called_tuples = [
-        ]
+        self.calculator.called_tuples = []
         self.calculator.hand = [
             MahjongTiles(1), MahjongTiles(1), MahjongTiles(1),
             MahjongTiles(2), MahjongTiles(3), MahjongTiles(4),
@@ -244,6 +357,218 @@ class TestFaanCal(unittest.TestCase):
         self.assertTrue(self.calculator.is_valid_winning_hand())
         self.assertFalse(self.calculator.pure_suit())
 
+    def test_great_dragon_hand(self):
+        # Called
+        self.calculator.called_tuples = [
+            (MahjongTiles(32), MahjongTiles(32),  MahjongTiles(32)), # Red Dragon Pong
+            (MahjongTiles(33), MahjongTiles(33),  MahjongTiles(33)), # White Dragon Pong
+            (MahjongTiles(34), MahjongTiles(34),  MahjongTiles(34)),  # Green Dragon Pong
+        ]
+        self.calculator.hand = [
+            MahjongTiles(5), MahjongTiles(6), MahjongTiles(7),  # Chow
+            MahjongTiles(8), MahjongTiles(8)  # Pair
+        ]
+        self.calculator.hand.sort(key=lambda x: x.classId)
+        self.assertTrue(self.calculator.great_dragon_hand())
+
+        # No call
+        self.calculator.called_tuples = []
+        self.calculator.hand = [
+            MahjongTiles(32), MahjongTiles(32),  MahjongTiles(32), # Red Dragon Pong
+            MahjongTiles(33), MahjongTiles(33),  MahjongTiles(33), # White Dragon Pong 
+            MahjongTiles(34), MahjongTiles(34),  MahjongTiles(34),  # Green Dragon Pong
+            MahjongTiles(5), MahjongTiles(6), MahjongTiles(7),  # Chow
+            MahjongTiles(8), MahjongTiles(8)  # Pair
+        ]
+        self.calculator.hand.sort(key=lambda x: x.classId)
+        self.assertTrue(self.calculator.great_dragon_hand())
+
+    def test_great_dragon_hand_false(self):
+        # Called
+        self.calculator.called_tuples = [
+            (MahjongTiles(32), MahjongTiles(32),  MahjongTiles(32)), # Red Dragon Pong
+            (MahjongTiles(33), MahjongTiles(33),  MahjongTiles(33)), # White Dragon Pong
+            (MahjongTiles(1), MahjongTiles(2),  MahjongTiles(3)),  # Chow
+        ]
+        self.calculator.hand = [
+            MahjongTiles(5), MahjongTiles(6), MahjongTiles(7),  # Chow
+            MahjongTiles(8), MahjongTiles(8)  # Pair
+        ]
+        self.calculator.hand.sort(key=lambda x: x.classId)
+        self.assertFalse(self.calculator.great_dragon_hand())
+
+        # No call
+        self.calculator.called_tuples = []
+        self.calculator.hand = [
+            MahjongTiles(32), MahjongTiles(32),  MahjongTiles(32), # Red Dragon Pong
+            MahjongTiles(33), MahjongTiles(33),  MahjongTiles(33), # White Dragon Pong 
+            MahjongTiles(1), MahjongTiles(2),  MahjongTiles(3),  # Chow
+            MahjongTiles(5), MahjongTiles(6), MahjongTiles(7),  # Chow
+            MahjongTiles(8), MahjongTiles(8)  # Pair
+        ]
+        self.calculator.hand.sort(key=lambda x: x.classId)
+        self.assertFalse(self.calculator.great_dragon_hand())
+
+    def test_pure_orphans_hand(self):
+        # Called
+        self.calculator.called_tuples = [
+            (MahjongTiles(1), MahjongTiles(1), MahjongTiles(1)),  # Pong of 1 Characters
+            (MahjongTiles(9), MahjongTiles(9), MahjongTiles(9), MahjongTiles(9))  # Pong of 9 Characters
+        ]
+        self.calculator.hand = [
+            MahjongTiles(19), MahjongTiles(19), MahjongTiles(19),  # Pong of 1 Sok
+            MahjongTiles(27), MahjongTiles(27), MahjongTiles(27),  # Pong of 9 Sok
+            MahjongTiles(10), MahjongTiles(10)  # Pair of 1p
+        ]
+        self.calculator.hand.sort(key=lambda x: x.classId)
+        self.assertTrue(self.calculator.pure_orphans_hand())
+
+        # No call
+        self.calculator.called_tuples = []
+        self.calculator.hand = [
+            MahjongTiles(1), MahjongTiles(1), MahjongTiles(1),  # Pong of 1 Characters
+            MahjongTiles(9), MahjongTiles(9), MahjongTiles(9),  # Pong of 9 Characters
+            MahjongTiles(19), MahjongTiles(19), MahjongTiles(19),  # Pong of 1 Sok
+            MahjongTiles(27), MahjongTiles(27), MahjongTiles(27),  # Pong of 9 Sok
+            MahjongTiles(10), MahjongTiles(10)  # Pair of 1p
+        ]
+        self.calculator.hand.sort(key=lambda x: x.classId)
+        self.assertTrue(self.calculator.pure_orphans_hand())
+
+    def test_pure_orphans_hand_false(self):
+        # Called
+        self.calculator.called_tuples = [
+            (MahjongTiles(1), MahjongTiles(1), MahjongTiles(1)),  # Pong of 1 Characters
+            (MahjongTiles(9), MahjongTiles(9), MahjongTiles(9), MahjongTiles(9))  # Pong of 9 Characters
+        ]
+        self.calculator.hand = [
+            MahjongTiles(19), MahjongTiles(19), MahjongTiles(19),  # Pong of 1 Sok
+            MahjongTiles(25), MahjongTiles(26), MahjongTiles(27),  # Chow 7-8-9 of Sok
+            MahjongTiles(10), MahjongTiles(10)  # Pair of 1p
+        ]
+        self.calculator.hand.sort(key=lambda x: x.classId)
+        self.assertFalse(self.calculator.pure_orphans_hand())
+        
+        # Called
+        self.calculator.called_tuples = [
+            (MahjongTiles(1), MahjongTiles(2), MahjongTiles(3)),  # Pong of 1 Characters
+            (MahjongTiles(9), MahjongTiles(9), MahjongTiles(9), MahjongTiles(9))  # Pong of 9 Characters
+        ]
+        self.calculator.hand = [
+            MahjongTiles(19), MahjongTiles(19), MahjongTiles(19),  # Pong of 1 Sok
+            MahjongTiles(27), MahjongTiles(27), MahjongTiles(27),  # Pong of 9 Sok
+            MahjongTiles(10), MahjongTiles(10)  # Pair of 1p
+        ]
+        self.calculator.hand.sort(key=lambda x: x.classId)
+        self.assertFalse(self.calculator.pure_orphans_hand())
+
+        # No call
+        self.calculator.called_tuples = []
+        self.calculator.hand = [
+            MahjongTiles(1), MahjongTiles(1), MahjongTiles(1),  # Pong of 1 Characters
+            MahjongTiles(9), MahjongTiles(9), MahjongTiles(9),  # Pong of 9 Characters
+            MahjongTiles(19), MahjongTiles(19), MahjongTiles(19),  # Pong of 1 Sok
+            MahjongTiles(25), MahjongTiles(26), MahjongTiles(27),  # Chow 7-8-9 of Sok
+            MahjongTiles(10), MahjongTiles(10)  # Pair of 1p
+        ]
+        self.calculator.hand.sort(key=lambda x: x.classId)
+        self.assertFalse(self.calculator.pure_orphans_hand())
+
+    def test_all_winds_and_dragons(self):
+        # Called
+        self.calculator.called_tuples = [
+            (MahjongTiles(28), MahjongTiles(28), MahjongTiles(28)),  # East Pong
+            (MahjongTiles(29), MahjongTiles(29), MahjongTiles(29)),  # South Pong
+            (MahjongTiles(32), MahjongTiles(32), MahjongTiles(32)),  # White Pong
+        ]
+        self.calculator.hand = [
+            MahjongTiles(31), MahjongTiles(31), MahjongTiles(31),  # North Pong
+            MahjongTiles(34), MahjongTiles(34)  # Pair of Red Dragon
+        ]
+        self.calculator.hand.sort(key=lambda x: x.classId)
+        self.assertTrue(self.calculator.all_winds_and_dragons())
+        
+        # No call
+        self.calculator.called_tuples = []
+        self.calculator.hand = [
+            MahjongTiles(28), MahjongTiles(28), MahjongTiles(28),  # East Pong
+            MahjongTiles(29), MahjongTiles(29), MahjongTiles(29),  # South Pong
+            MahjongTiles(30), MahjongTiles(30), MahjongTiles(30),  # West Pong
+            MahjongTiles(31), MahjongTiles(31), MahjongTiles(31),  # North Pong
+            MahjongTiles(34), MahjongTiles(34)  # Pair of Red Dragon
+        ]
+        self.calculator.hand.sort(key=lambda x: x.classId)
+        self.assertTrue(self.calculator.all_winds_and_dragons())
+
+    def test_all_winds_and_dragons_false(self):
+        # Called
+        self.calculator.called_tuples = [
+            (MahjongTiles(28), MahjongTiles(28), MahjongTiles(28)),  # East Pong
+            (MahjongTiles(29), MahjongTiles(29), MahjongTiles(29)),  # South Pong
+            (MahjongTiles(3), MahjongTiles(4), MahjongTiles(5)),  # Chow
+        ]
+        self.calculator.hand = [
+            MahjongTiles(31), MahjongTiles(31), MahjongTiles(31),  # North Pong
+            MahjongTiles(34), MahjongTiles(34)  # Pair of Red Dragon
+        ]
+        self.assertFalse(self.calculator.all_winds_and_dragons())
+        
+        # No call
+        self.calculator.called_tuples = []
+        self.calculator.hand = [
+            MahjongTiles(28), MahjongTiles(28), MahjongTiles(28),  # East Pong
+            MahjongTiles(29), MahjongTiles(29), MahjongTiles(29),  # South Pong
+            MahjongTiles(3), MahjongTiles(4), MahjongTiles(5),  # Chow
+            MahjongTiles(31), MahjongTiles(31), MahjongTiles(31),  # North Pong
+            MahjongTiles(34), MahjongTiles(34)  # Pair of Red Dragon
+        ]
+        self.calculator.hand.sort(key=lambda x: x.classId)
+        self.assertFalse(self.calculator.all_winds_and_dragons())
+
+    def test_nine_gates_to_haven(self):
+        self.calculator.hand = [
+            MahjongTiles(1), MahjongTiles(1), MahjongTiles(1),
+            MahjongTiles(2), MahjongTiles(3), MahjongTiles(4),
+            MahjongTiles(5), MahjongTiles(6), MahjongTiles(7),
+            MahjongTiles(8), MahjongTiles(9), MahjongTiles(9),
+            MahjongTiles(9), MahjongTiles(5)
+        ]
+        self.calculator.hand.sort(key=lambda x: x.classId)
+        self.assertTrue(self.calculator.nine_gates_to_haven())
+        
+        self.calculator.hand = [
+            MahjongTiles(10), MahjongTiles(10), MahjongTiles(10),
+            MahjongTiles(11), MahjongTiles(12), MahjongTiles(13),
+            MahjongTiles(14), MahjongTiles(15), MahjongTiles(16),
+            MahjongTiles(17), MahjongTiles(18), MahjongTiles(18),
+            MahjongTiles(18), MahjongTiles(14)
+        ]
+        self.calculator.hand.sort(key=lambda x: x.classId)
+        self.assertTrue(self.calculator.nine_gates_to_haven())
+        
+        self.calculator.hand = [
+            MahjongTiles(19), MahjongTiles(19), MahjongTiles(19),
+            MahjongTiles(20), MahjongTiles(21), MahjongTiles(22),
+            MahjongTiles(23), MahjongTiles(24), MahjongTiles(25),
+            MahjongTiles(26), MahjongTiles(27), MahjongTiles(27),
+            MahjongTiles(27), MahjongTiles(23)
+        ]
+        self.calculator.hand.sort(key=lambda x: x.classId)
+        self.assertTrue(self.calculator.nine_gates_to_haven())
+
+    def test_nine_gates_to_haven_false(self):
+        self.calculator.called_tuples = [
+            (MahjongTiles(1), MahjongTiles(1), MahjongTiles(1)),
+        ]
+        self.calculator.hand = [
+            MahjongTiles(2), MahjongTiles(3), MahjongTiles(4),
+            MahjongTiles(5), MahjongTiles(6), MahjongTiles(7),
+            MahjongTiles(8), MahjongTiles(9), MahjongTiles(9),
+            MahjongTiles(9), MahjongTiles(6)
+        ]
+        self.calculator.hand.sort(key=lambda x: x.classId)
+        self.assertFalse(self.calculator.nine_gates_to_haven())
+
     def test_13_orphans(self):
         self.calculator.hand = [
             MahjongTiles(1), MahjongTiles(9),  # 1 and 9 of Characters
@@ -255,7 +580,7 @@ class TestFaanCal(unittest.TestCase):
         ]
         self.assertTrue(self.calculator.thirteen_orphans())
 
-    def test_not_13_orphans(self):
+    def test_13_orphans_false(self):
         self.calculator.hand = [
             MahjongTiles(1), MahjongTiles(1),  # 1 and 9 of Characters
             MahjongTiles(10), MahjongTiles(18),  # 1 and 9 of Bamboos
@@ -265,6 +590,78 @@ class TestFaanCal(unittest.TestCase):
             MahjongTiles(1)  # Pair of 1 of Characters
         ]
         self.assertFalse(self.calculator.thirteen_orphans())
+
+    def test_little_4_winds_hand(self):
+        # Called
+        self.calculator.called_tuples = [
+            (MahjongTiles(28), MahjongTiles(28), MahjongTiles(28)),  # East Pong
+            (MahjongTiles(29), MahjongTiles(29), MahjongTiles(29)),  # South Pong
+            (MahjongTiles(30), MahjongTiles(30), MahjongTiles(30)),  # West Pong
+        ]
+        self.calculator.hand = [
+            MahjongTiles(3),  MahjongTiles(4), MahjongTiles(5),# Chow
+            MahjongTiles(31), MahjongTiles(31)  # Pair of North
+        ]
+        self.assertTrue(self.calculator.little_4_winds_hand())
+
+        # Called
+        self.calculator.called_tuples = [
+            (MahjongTiles(28), MahjongTiles(28), MahjongTiles(28)),  # East Pong
+            (MahjongTiles(29), MahjongTiles(29), MahjongTiles(29)),  # South Pong
+            (MahjongTiles(3),  MahjongTiles(4), MahjongTiles(5)), # Chow
+        ]
+        self.calculator.hand = [
+            MahjongTiles(30), MahjongTiles(30), MahjongTiles(30),  # West Pong
+            MahjongTiles(31), MahjongTiles(31)  # Pair of North
+        ]
+        self.assertTrue(self.calculator.little_4_winds_hand())
+
+        # No call
+        self.calculator.called_tuples = []
+        self.calculator.hand = [
+            MahjongTiles(28), MahjongTiles(28), MahjongTiles(28),  # East Pong
+            MahjongTiles(29), MahjongTiles(29), MahjongTiles(29),  # South Pong
+            MahjongTiles(30), MahjongTiles(30), MahjongTiles(30),  # West Pong
+            MahjongTiles(3),  MahjongTiles(4), MahjongTiles(5),# Chow
+            MahjongTiles(31), MahjongTiles(31)  # Pair of North
+        ]
+        self.assertTrue(self.calculator.little_4_winds_hand())
+
+    def test_little_4_winds_hand_false(self):
+        # Called
+        self.calculator.called_tuples = [
+            (MahjongTiles(28), MahjongTiles(28), MahjongTiles(28)),  # East Pong
+            (MahjongTiles(29), MahjongTiles(29), MahjongTiles(29)),  # South Pong
+            (MahjongTiles(3),  MahjongTiles(4), MahjongTiles(5)), # Chow
+        ]
+        self.calculator.hand = [
+            MahjongTiles(1), MahjongTiles(1), MahjongTiles(1),  # Not West Pong
+            MahjongTiles(31), MahjongTiles(31)  # Pair of North
+        ]
+        self.assertFalse(self.calculator.little_4_winds_hand())
+
+        # No call
+        self.calculator.called_tuples = []
+        self.calculator.hand = [
+            MahjongTiles(28), MahjongTiles(28), MahjongTiles(28),  # East Pong
+            MahjongTiles(29), MahjongTiles(29), MahjongTiles(29),  # South Pong
+            MahjongTiles(3),  MahjongTiles(4), MahjongTiles(5),# Chow
+            MahjongTiles(3),  MahjongTiles(4), MahjongTiles(5),# Chow
+            MahjongTiles(31), MahjongTiles(31)  # Pair of North, missing West Pong
+        ]
+        self.assertFalse(self.calculator.little_4_winds_hand())
+
+        # Greate 4 wind case
+        self.calculator.called_tuples = [
+            (MahjongTiles(28), MahjongTiles(28), MahjongTiles(28)),  # East Pong
+            (MahjongTiles(29), MahjongTiles(29), MahjongTiles(29)),  # South Pong
+            (MahjongTiles(30), MahjongTiles(30), MahjongTiles(30)),  # West Pong
+            (MahjongTiles(31), MahjongTiles(31), MahjongTiles(31)),  # North Pong
+        ]
+        self.calculator.hand = [
+            MahjongTiles(1), MahjongTiles(1)  # Pair of North
+        ]
+        self.assertFalse(self.calculator.little_4_winds_hand())
 
     def test_great_4_winds_hand(self):
         self.calculator.called_tuples = [
