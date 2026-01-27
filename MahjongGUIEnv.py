@@ -186,6 +186,13 @@ class MahjongGUIEnv:
                             print(f"Player {current_player.id} wins (self drawn): {winning_faan}")
                             self.game_state = 'ending_round'
                             self.current_player_on_draw_actions = []
+                            self.log.append({
+                                'player_id': current_player.id,
+                                'action': 'self_drawn',
+                                'player_hand': [str(tile) for tile in current_player.hand],
+                                'called_tuples': [[str(tile) for tile in tup] for tup in current_player.called_tuples],
+                                'discard_pool': [str(tile) for tile in self.discard_pool]
+                            })
                             break
                         elif chosen_action == 'additional_kong':
                             current_player.additional_kong()
