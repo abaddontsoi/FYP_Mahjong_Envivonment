@@ -15,6 +15,10 @@ class PlayerGUI:
     def assign_env(self, env):
         self.game_env = env
 
+    def set_position(self, position: int):
+        self.round_position = position
+        self.faan_calculator.position = position
+
     def sort_hand(self):
         self.hand.sort(key=lambda x: x.classId)
 
@@ -22,6 +26,9 @@ class PlayerGUI:
         self.hand += tiles
         self.sort_hand()
         self.faan_calculator.update_hand_and_called_tuples(self.hand, self.called_tuples)
+        self.faan_calculator.self_drawn_flag = True
+        if len(self.game_env.deck) == 0:
+            self.faan_calculator.self_drawn_on_last_tile_flag = True
 
     def get_hand_as_string(self):
         return ' '.join([t.tile_class_info[1] for t in self.hand])
@@ -56,6 +63,11 @@ class PlayerGUI:
         self.hand = []
         self.called_tuples = []
         self.faan_calculator.update_hand_and_called_tuples(self.hand, self.called_tuples)
+        self.position = -1
+        self.faan_calculator.self_drawn_flag = False
+        self.faan_calculator.consecutive_kong_count = 0
+        self.faan_calculator.robbing_additional_kong_flag = False
+        self.faan_calculator.self_drawn_on_last_tile_flag = False
 
     def find_first_by_number(self, tile_number: int, suit, provided_list: list[MahjongTiles.MahjongTiles] = None):
         if not provided_list:
@@ -94,7 +106,11 @@ class PlayerGUI:
         actions = []
         # Put those selected mahjong tiles to self.called_tuples, responses are: 
         # 'win'
-        if self.check_win(call_tile):
+        temp_hand = self.hand + []
+        temp_hand.append(call_tile)
+        temp_hand.sort(key=lambda x: x.classId)
+        self.faan_calculator.update_hand_and_called_tuples(temp_hand, self.called_tuples)
+        if self.faan_calculator.is_valid_winning_hand():
             actions.append('win')
 
         # 'kong'
@@ -144,6 +160,8 @@ class PlayerGUI:
             if chow_options:
                 actions.append('chow')
         
+        self.faan_calculator.update_hand_and_called_tuples(self.hand, self.called_tuples)
+
         return actions
 
     # length must be multiple of 3, max 12
@@ -292,6 +310,16 @@ class PlayerGUI:
                     self.hand.remove(tile)
                     return
 
+    def win(self, winning_tile: MahjongTiles.MahjongTiles = None):
+        temp_hand = self.hand + []
+        if winning_tile is not None:
+            temp_hand.append(winning_tile)
+        temp_hand.sort(key=lambda x: x.classId)
+        self.faan_calculator.update_hand_and_called_tuples(temp_hand, self.called_tuples)
+        if self.faan_calculator.is_valid_winning_hand():
+            return self.faan_calculator.check_faan_match()
+        
+        return None
 
     def hidden_kong(self):
         if len(self.hand) >= 4:
@@ -362,7 +390,6 @@ class PlayerGUI:
         self.hand = [t for t in self.hand if t not in chosen_option]
         chow_tiles.append(call_tile)
         self.called_tuples.append(tuple(chow_tiles))
-
 
     def align_tile_sprites(self):   
         self.sort_hand()

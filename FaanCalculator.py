@@ -34,7 +34,6 @@ class FaanCalculator:
             'earthly_hand': (10, None),
         }
         self.hand = []
-        self.call_tile = None
         self.called_tuples = []
         self.round = round
         self.position = position
@@ -46,9 +45,6 @@ class FaanCalculator:
     def update_hand_and_called_tuples(self, hand, called_tuples):
         self.hand = hand
         self.called_tuples = called_tuples
-
-    def update_call_tile(self, call_tile):
-        self.call_tile = call_tile
     
     def check_tuple_type(self, tuple: tuple[MahjongTiles]):
         if len(tuple) == 4:
@@ -721,6 +717,11 @@ class FaanCalculator:
     
     def check_faan_match(self):
         faan_achieved = []
+        self.hand.sort(key=lambda x: x.classId)
+        if not self.is_valid_winning_hand():
+            return faan_achieved
+        
+        # Check each faan condition
         for faan_name, (faan_value, check_method) in self.FaanList.items():
             if check_method and check_method():
                 faan_achieved.append((faan_name, faan_value))
