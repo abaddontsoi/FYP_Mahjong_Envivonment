@@ -111,7 +111,14 @@ class PlayerGUI:
         temp_hand.sort(key=lambda x: x.classId)
         self.faan_calculator.update_hand_and_called_tuples(temp_hand, self.called_tuples)
         if self.faan_calculator.is_valid_winning_hand():
-            actions.append('win')
+            # Calculating faan value
+            faans = self.faan_calculator.check_faan_match()
+            faan_count = 0
+            for faan in faans:
+                faan_count += faan[1]
+            if faan_count >= self.game_env.min_faan:
+                print(f"Possible win with {faan_count} faan.")
+                actions.append('win')
 
         # 'kong'
         call_tile_id = call_tile.classId
@@ -259,8 +266,14 @@ class PlayerGUI:
     def check_on_draw_action(self):
         actions = []
         # check self drawn
-        if self.check_win():
-            actions.append('self_drawn')
+        if self.faan_calculator.is_valid_winning_hand():
+            # Calculating faan value
+            faans = self.faan_calculator.check_faan_match()
+            faan_count = 0
+            for faan in faans:
+                faan_count += faan[1]
+            if faan_count >= self.game_env.min_faan:
+                actions.append('self_drawn')
         
         # check additional kong
         for tile in self.hand:
