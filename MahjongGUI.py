@@ -64,7 +64,10 @@ class MahjongGUI:
                     self.game_env.update_game_state()
                     self.render()
                     self.clock.tick(120)
-
+        log = self.game_env.log
+        with open('game_log.txt', 'w') as f:
+            for entry in log:
+                f.write(f"{entry}\n")
         pygame.quit()
 
     # Event handler
