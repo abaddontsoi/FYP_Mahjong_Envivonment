@@ -178,7 +178,6 @@ class TestFaanCal(unittest.TestCase):
         self.calculator.hand.sort(key=lambda x: x.classId)  
         self.assertFalse(self.calculator.all_chow_hand())
 
-
     def test_all_pong_hand(self):
         self.calculator.called_tuples = [
             (MahjongTiles(1), MahjongTiles(1), MahjongTiles(1)),  # Pong of 1 Characters
@@ -733,6 +732,116 @@ class TestFaanCal(unittest.TestCase):
             MahjongTiles(5), MahjongTiles(5)                     # Pair of 5 Characters
         ]
         self.assertFalse(self.calculator.four_hidden_pong())
+
+    def test_faan_list(self):
+        # No call, all chow hand, self drawn
+        self.calculator.called_tuples = []
+        self.calculator.hand = [
+            MahjongTiles(1), MahjongTiles(2), MahjongTiles(3),
+            MahjongTiles(3), MahjongTiles(4), MahjongTiles(5),
+            MahjongTiles(17), MahjongTiles(18), MahjongTiles(16),
+            MahjongTiles(17), MahjongTiles(18), MahjongTiles(16),
+            MahjongTiles(28), MahjongTiles(28)
+        ]
+        self.calculator.self_drawn_flag = True
+        self.calculator.hand.sort(key=lambda x: x.classId)
+        expected_faan = [('all_chow_hand', 1), ('self_drawn', 1), ('no_call', 1)]
+        faan_result = self.calculator.check_faan_match()
+        for faan in expected_faan:
+            self.assertIn(faan, faan_result)
+        
+        # No call, green, self drawn
+        self.calculator.called_tuples = []
+        self.calculator.hand = [
+            MahjongTiles(33), MahjongTiles(33), MahjongTiles(33),
+            MahjongTiles(3), MahjongTiles(4), MahjongTiles(5),
+            MahjongTiles(17), MahjongTiles(18), MahjongTiles(16),
+            MahjongTiles(17), MahjongTiles(18), MahjongTiles(16),
+            MahjongTiles(28), MahjongTiles(28)
+        ]
+        self.calculator.self_drawn_flag = True
+        self.calculator.hand.sort(key=lambda x: x.classId)
+        expected_faan = [('green', 1), ('self_drawn', 1), ('no_call', 1)]
+        faan_result = self.calculator.check_faan_match()
+        for faan in expected_faan:
+            self.assertIn(faan, faan_result)
+
+        # Round wind and round position
+        self.calculator.called_tuples = [
+            (MahjongTiles(28), MahjongTiles(28), MahjongTiles(28)),  # East Pong
+            (MahjongTiles(1), MahjongTiles(2), MahjongTiles(3)),  # Chow
+        ]
+        self.calculator.hand = [
+            MahjongTiles(1), MahjongTiles(1), 
+            MahjongTiles(2), MahjongTiles(2),
+            MahjongTiles(3), MahjongTiles(3),
+            MahjongTiles(4), MahjongTiles(4)
+        ]
+        self.calculator.round = 0
+        self.calculator.position = 0
+        expected_faan = [('round_wind', 1), ('round_position', 1), ('clean_hand', 3)]
+        faan_result = self.calculator.check_faan_match()
+        for faan in expected_faan:
+            self.assertIn(faan, faan_result)
+
+        # Pure suit
+        self.calculator.called_tuples = [
+            (MahjongTiles(1), MahjongTiles(1), MahjongTiles(1)),  # Pong of 1 Characters
+            (MahjongTiles(2), MahjongTiles(2), MahjongTiles(2)),  # Pong of 2 Characters
+            (MahjongTiles(3), MahjongTiles(3), MahjongTiles(3))   # Pong of 3 Characters
+        ]
+        self.calculator.hand = [
+            MahjongTiles(6), MahjongTiles(7), MahjongTiles(8),  # Chow of 4 Characters
+            MahjongTiles(5), MahjongTiles(5)                     # Pair of 5 Characters
+        ]
+        expected_faan = [('pure_suit', 7)]
+        faan_result = self.calculator.check_faan_match()
+        for faan in expected_faan:
+            self.assertIn(faan, faan_result)
+        
+        # Pure suit and all chow hand
+        self.calculator.called_tuples = []
+        self.calculator.hand = [
+            MahjongTiles(1), MahjongTiles(1), MahjongTiles(1),
+            MahjongTiles(2), MahjongTiles(2), MahjongTiles(2),
+            MahjongTiles(3), MahjongTiles(3), MahjongTiles(3),
+            MahjongTiles(6), MahjongTiles(7), MahjongTiles(8),  # Chow of 4 Characters
+            MahjongTiles(5), MahjongTiles(5)                     # Pair of 5 Characters
+        ]
+        expected_faan = [('pure_suit', 7), ('all_chow_hand', 1)]
+        faan_result = self.calculator.check_faan_match()
+        for faan in expected_faan:
+            self.assertIn(faan, faan_result)
+
+        # Pure Suit and All Pong Hand
+        self.calculator.called_tuples = [
+            (MahjongTiles(1), MahjongTiles(1), MahjongTiles(1)),  # Pong of 1 Characters
+            (MahjongTiles(2), MahjongTiles(2), MahjongTiles(2)),  # Pong of 2 Characters
+            (MahjongTiles(3), MahjongTiles(3), MahjongTiles(3))   # Pong of 3 Characters
+        ]
+        self.calculator.hand = [
+            MahjongTiles(4), MahjongTiles(4), MahjongTiles(4),  # Pong of 4 Characters
+            MahjongTiles(5), MahjongTiles(5)                     # Pair of 5 Characters
+        ]
+        expected_faan = [('all_pong_hand', 3), ('pure_suit', 7)]
+        faan_result = self.calculator.check_faan_match()
+        for faan in expected_faan:
+            self.assertIn(faan, faan_result)
+        
+        # Pure Suit and All Kong Hand
+        self.calculator.called_tuples = [
+            (MahjongTiles(1), MahjongTiles(1), MahjongTiles(1), MahjongTiles(1)),  # Kong of 1 Characters
+            (MahjongTiles(2), MahjongTiles(2), MahjongTiles(2), MahjongTiles(2)),  # Kong of 2 Characters
+            (MahjongTiles(3), MahjongTiles(3), MahjongTiles(3), MahjongTiles(3)),   # Kong of 3 Characters
+            (MahjongTiles(4), MahjongTiles(4), MahjongTiles(4), MahjongTiles(4))   # Kong of 4 Characters
+        ]
+        self.calculator.hand = [
+            MahjongTiles(5), MahjongTiles(5)                     # Pair of 5 Characters
+        ]
+        expected_faan = [('all_kong_hand', 10), ('pure_suit', 7)]
+        faan_result = self.calculator.check_faan_match()
+        for faan in expected_faan:
+            self.assertIn(faan, faan_result)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

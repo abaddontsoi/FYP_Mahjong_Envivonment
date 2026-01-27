@@ -1,43 +1,47 @@
 from MahjongTiles import MahjongTiles
 
 class FaanCalculator:
-    FaanList = {
-        'self_drawn': 1,
-        'white': 1,
-        'no_call': 1,
-        'red': 1,
-        'green': 1,
-        'round_wind': 1,
-        'round_position': 1,
-        'mixed_orphans': 1,
-        'all_chow_hand': 1,
-        'robbing_additional_kong': 1,
-        'self_drawn_on_last_tile': 1,
-        'self_drawn_after_kong': 1,
-        'all_pong_hand': 3,
-        'clean_hand': 3,
-        'little_dragon_hand': 5,
-        'pure_suit': 7,
-        'great_dragon_hand': 10,
-        'self_drawn_after_2kong': 10,
-        'pure_orphans_hand': 10,
-        'all_winds_and_dragons': 10, 
-        # 9子連環
-        '9_gates_to_haven': 10, 
-        '13_orphans': 10,
-        'little_4_winds_hand': 10,
-        'great_4_winds_hand': 10,
-        'all_kong_hand': 10,
-        'four_hidden_pong': 10,
-        'havenly_hand': 10,
-        'earthly_hand': 10,
-    }
     def __init__(self, round = 0, position = 0):
+        self.FaanList = {
+            'self_drawn': (1, self.self_drawn),
+            'white': (1, self.white),
+            'no_call': (1, self.no_call),
+            'red': (1, self.red),
+            'green': (1, self.green),
+            'round_wind': (1, self.round_wind),
+            'round_position': (1, self.round_position),
+            'mixed_orphans': (1, self.mixed_orphans),
+            'all_chow_hand': (1, self.all_chow_hand),
+            'robbing_additional_kong': (1, self.robbing_additional_kong),
+            'self_drawn_on_last_tile': (1, self.self_drawn_on_last_tile),
+            'self_drawn_after_kong': (1, self.self_drawn_after_kong),
+            'all_pong_hand': (3, self.all_pong_hand),
+            'clean_hand': (3, self.clean_hand),
+            'little_dragon_hand': (5, self.little_dragon_hand),
+            'pure_suit': (7, self.pure_suit),
+            'great_dragon_hand': (10, self.great_dragon_hand),
+            'self_drawn_after_2kong': (10, self.self_drawn_after_2kong),
+            'pure_orphans_hand': (10, self.pure_orphans_hand),
+            'all_winds_and_dragons': (10, self.all_winds_and_dragons), 
+            # 9子連環
+            '9_gates_to_haven': (10, self.nine_gates_to_haven), 
+            '13_orphans': (10, self.thirteen_orphans),
+            'little_4_winds_hand': (10, self.little_4_winds_hand),
+            'great_4_winds_hand': (10, self.great_4_winds_hand),
+            'all_kong_hand': (10, self.all_kong_hand),
+            'four_hidden_pong': (10, self.four_hidden_pong),
+            'havenly_hand': (10, None),
+            'earthly_hand': (10, None),
+        }
         self.hand = []
         self.call_tile = None
         self.called_tuples = []
         self.round = round
         self.position = position
+        self.self_drawn_flag = False
+        self.consecutive_kong_count = 0
+        self.robbing_additional_kong_flag = False
+        self.self_drawn_on_last_tile_flag = False
     
     def update_hand_and_called_tuples(self, hand, called_tuples):
         self.hand = hand
@@ -149,7 +153,7 @@ class FaanCalculator:
         return True
     
     def self_drawn(self):
-        return False
+        return self.self_drawn_flag
     
     def white(self):
         for t in self.called_tuples:
@@ -283,13 +287,13 @@ class FaanCalculator:
         return False
 
     def robbing_additional_kong(self):
-        return False
-
+        return self.robbing_additional_kong_flag 
+    
     def self_drawn_on_last_tile(self):
-        return False
+        return self.self_drawn_on_last_tile_flag
 
     def self_drawn_after_kong(self):
-        return False
+        return self.consecutive_kong_count == 1 and self.self_drawn_flag
 
     def all_pong_hand(self):
         # Consists of all pong/kong tuples and a pair
@@ -341,11 +345,14 @@ class FaanCalculator:
         flatten_and_combined.sort(key=lambda x: x.classId)
 
         first_suit = flatten_and_combined[0].tile_suit
+        wind_or_dragon_found = False
         for tile in flatten_and_combined:
             if tile.tile_suit != first_suit and tile.tile_suit != 'z':
                 return False
+            if tile.tile_suit == 'z':
+                wind_or_dragon_found = True
         
-        return True
+        return wind_or_dragon_found
 
     def little_dragon_hand(self):
         white = None
@@ -443,6 +450,14 @@ class FaanCalculator:
     def self_drawn_after_2kong(self):
         if self.no_call():
             return False
+        kong_count = 0
+        for t in self.called_tuples:
+            if self.check_tuple_type(t) == 'kong':
+                kong_count += 1
+        if kong_count < 2:
+            return False
+        
+        return self.consecutive_kong_count >= 2 and self.self_drawn_flag
     
     def pure_orphans_hand(self):
         # Valid pong class
@@ -703,3 +718,25 @@ class FaanCalculator:
             if tile.classId == classId:
                 count += 1
         return count
+    
+    def check_faan_match(self):
+        faan_achieved = []
+        for faan_name, (faan_value, check_method) in self.FaanList.items():
+            if check_method and check_method():
+                faan_achieved.append((faan_name, faan_value))
+        
+        # Some of the small value faans are removed in final calculation
+        for faan in faan_achieved:
+            if faan[0] == 'self_drawn' and any([self.self_drawn_after_kong(), self.self_drawn_on_last_tile(), self.self_drawn_after_2kong()]):
+                faan_achieved.remove(faan)
+            if faan[0] == 'white' and (self.little_dragon_hand() or self.great_dragon_hand()):
+                faan_achieved.remove(faan)
+            if faan[0] == 'green' and (self.little_dragon_hand() or self.great_dragon_hand()):
+                faan_achieved.remove(faan)
+            if faan[0] == 'red' and (self.little_dragon_hand() or self.great_dragon_hand()):
+                faan_achieved.remove(faan)
+            if faan[0] == 'all_pong_hand' and (self.four_hidden_pong() or self.all_kong_hand()):
+                faan_achieved.remove(faan)
+            
+
+        return faan_achieved
