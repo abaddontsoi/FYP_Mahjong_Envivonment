@@ -10,7 +10,7 @@ class Player:
         self.round_position = -1
 
     def assign_env(self, env: MahjongEnv):
-        self.game_env(env)
+        self.game_env = env
 
     def draw_tiles(self, tiles: list[MahjongTiles.MahjongTiles]):
         self.hand += tiles
