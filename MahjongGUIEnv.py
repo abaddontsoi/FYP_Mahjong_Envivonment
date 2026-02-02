@@ -189,9 +189,9 @@ class MahjongGUIEnv:
                             self.log.append({
                                 'player_id': current_player.id,
                                 'action': 'self_drawn',
-                                'player_hand': [str(tile) for tile in current_player.hand],
-                                'called_tuples': [[str(tile) for tile in tup] for tup in current_player.called_tuples],
-                                'discard_pool': [str(tile) for tile in self.discard_pool]
+                                'player_hand': [tile.classId for tile in current_player.hand],
+                                'called_tuples': [[tile.classId for tile in tup] for tup in current_player.called_tuples],
+                                'discard_pool': [tile.classId for tile in self.discard_pool]
                             })
                             break
                         elif chosen_action == 'additional_kong':
@@ -205,9 +205,9 @@ class MahjongGUIEnv:
                             self.log.append({
                                 'player_id': current_player.id,
                                 'action': 'additional_kong',
-                                'player_hand': [str(tile) for tile in current_player.hand],
-                                'called_tuples': [[str(tile) for tile in tup] for tup in current_player.called_tuples],
-                                'discard_pool': [str(tile) for tile in self.discard_pool]
+                                'player_hand': [tile.classId for tile in current_player.hand],
+                                'called_tuples': [[tile.classId for tile in tup] for tup in current_player.called_tuples],
+                                'discard_pool': [tile.classId for tile in self.discard_pool]
                             })
                         elif chosen_action == 'hidden_kong':
                             current_player.hidden_kong()
@@ -218,9 +218,9 @@ class MahjongGUIEnv:
                             self.log.append({
                                 'player_id': current_player.id,
                                 'action': 'hidden_kong',
-                                'player_hand': [str(tile) for tile in current_player.hand],
-                                'called_tuples': [[str(tile) for tile in tup] for tup in current_player.called_tuples],
-                                'discard_pool': [str(tile) for tile in self.discard_pool]
+                                'player_hand': [tile.classId for tile in current_player.hand],
+                                'called_tuples': [[tile.classId for tile in tup] for tup in current_player.called_tuples],
+                                'discard_pool': [tile.classId for tile in self.discard_pool]
                             })
                         elif chosen_action == 'pass':
                             self.current_player_on_draw_actions = []
@@ -243,10 +243,10 @@ class MahjongGUIEnv:
                 self.log.append({
                     'player_id': self.players[action_player].id,
                     'action': 'discard',
-                    'player_hand': [str(tile) for tile in self.players[action_player].hand],
-                    'called_tuples': [[str(tile) for tile in tup] for tup in self.players[action_player].called_tuples],
-                    'discard_pool': [str(tile) for tile in self.discard_pool],
-                    'discarded_tile': str(self.discard_buffer)
+                    'player_hand': [tile.classId for tile in self.players[action_player].hand],
+                    'called_tuples': [[tile.classId for tile in tup] for tup in self.players[action_player].called_tuples],
+                    'discard_pool': [tile.classId for tile in self.discard_pool],
+                    'discarded_tile': self.discard_buffer.classId
                 })
             elif self.event_buffer is not None and self.event_buffer.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = self.event_buffer.pos
@@ -260,10 +260,10 @@ class MahjongGUIEnv:
                         self.log.append({
                             'player_id': current_player.id,
                             'action': 'discard',
-                            'player_hand': [str(tile) for tile in current_player.hand],
-                            'called_tuples': [[str(tile) for tile in tup] for tup in current_player.called_tuples],
-                            'discard_pool': [str(tile) for tile in self.discard_pool],
-                            'discarded_tile': str(self.discard_buffer)
+                            'player_hand': [tile.classId for tile in current_player.hand],
+                            'called_tuples': [[tile.classId for tile in tup] for tup in current_player.called_tuples],
+                            'discard_pool': [tile.classId for tile in self.discard_pool],
+                            'discarded_tile': self.discard_buffer.classId
                         })
                         break
                 # Filter out the discarded tile
@@ -333,10 +333,10 @@ class MahjongGUIEnv:
                                     self.log.append({
                                         'player_id': self.players[action_player].id,
                                         'action': 'win',
-                                        'player_hand': [str(tile) for tile in self.players[action_player].hand],
-                                        'called_tuples': [[str(tile) for tile in tup] for tup in self.players[action_player].called_tuples],
-                                        'discard_pool': [str(tile) for tile in self.discard_pool],
-                                        'winning_tile': str(self.discard_buffer)
+                                        'player_hand': [tile.classId for tile in self.players[action_player].hand],
+                                        'called_tuples': [[tile.classId for tile in tup] for tup in self.players[action_player].called_tuples],
+                                        'discard_pool': [tile.classId for tile in self.discard_pool],
+                                        'call_tile': self.discard_buffer.classId
                                     })
                                     break
                                 elif chosen_action == 'kong':
@@ -347,10 +347,10 @@ class MahjongGUIEnv:
                                     self.log.append({
                                         'player_id': self.players[action_player].id,
                                         'action': 'kong',
-                                        'player_hand': [str(tile) for tile in self.players[action_player].hand],
-                                        'called_tuples': [[str(tile) for tile in tup] for tup in self.players[action_player].called_tuples],
-                                        'discard_pool': [str(tile) for tile in self.discard_pool],
-                                        'winning_tile': str(self.discard_buffer)
+                                        'player_hand': [tile.classId for tile in self.players[action_player].hand],
+                                        'called_tuples': [[tile.classId for tile in tup] for tup in self.players[action_player].called_tuples],
+                                        'discard_pool': [tile.classId for tile in self.discard_pool],
+                                        'call_tile': self.discard_buffer.classId
                                     })
                                 elif chosen_action == 'pong':
                                     self.players[action_player].pong(self.discard_buffer)
@@ -358,16 +358,16 @@ class MahjongGUIEnv:
                                     self.log.append({
                                         'player_id': self.players[action_player].id,
                                         'action': 'pong',
-                                        'player_hand': [str(tile) for tile in self.players[action_player].hand],
-                                        'called_tuples': [[str(tile) for tile in tup] for tup in self.players[action_player].called_tuples],
-                                        'discard_pool': [str(tile) for tile in self.discard_pool],
-                                        'winning_tile': str(self.discard_buffer)
+                                        'player_hand': [tile.classId for tile in self.players[action_player].hand],
+                                        'called_tuples': [[tile.classId for tile in tup] for tup in self.players[action_player].called_tuples],
+                                        'discard_pool': [tile.classId for tile in self.discard_pool],
+                                        'call_tile': self.discard_buffer.classId
                                     })
                                 elif chosen_action == 'chow':
                                     self.current_player_chow_options = self.players[action_player].get_chow_options(self.discard_buffer)
                                     if len(self.current_player_chow_options) > 1:
                                         # Multiple chow options, let player choose
-                                        print(f"Player {self.players[action_player].id} chow options: {[ [str(tile) for tile in option] for option in self.current_player_chow_options ]}")
+                                        print(f"Player {self.players[action_player].id} chow options: {[ [tile.classId for tile in option] for option in self.current_player_chow_options ]}")
                                         self.current_chow_action_player = action_player
                                         self.game_state = 'player_choose_chow_tiles'
                                         break
@@ -378,10 +378,10 @@ class MahjongGUIEnv:
                                     self.log.append({
                                         'player_id': self.players[action_player].id,
                                         'action': 'chow',
-                                        'player_hand': [str(tile) for tile in self.players[action_player].hand],
-                                        'called_tuples': [[str(tile) for tile in tup] for tup in self.players[action_player].called_tuples],
-                                        'discard_pool': [str(tile) for tile in self.discard_pool],
-                                        'winning_tile': str(self.discard_buffer)
+                                        'player_hand': [tile.classId for tile in self.players[action_player].hand],
+                                        'called_tuples': [[tile.classId for tile in tup] for tup in self.players[action_player].called_tuples],
+                                        'discard_pool': [tile.classId for tile in self.discard_pool],
+                                        'call_tile': self.discard_buffer.classId
                                     })
                                 elif chosen_action == 'pass':
                                     # If all players pass, add to discard pool
@@ -435,7 +435,7 @@ class MahjongGUIEnv:
                 for idx, chow_btn in enumerate(self.screen_items['player_chow_option_buttons']):
                     if chow_btn.rect.collidepoint(mouse_pos):
                         chosen_option = self.current_player_chow_options[idx]
-                        print(f"Player {current_player.id} chose chow option: {[str(tile) for tile in chosen_option]}")
+                        print(f"Player {current_player.id} chose chow option: {[tile.classId for tile in chosen_option]}")
 
                         self.players[action_player].chow(self.discard_buffer, chosen_option)
                         self.game_state = 'waiting_discard'

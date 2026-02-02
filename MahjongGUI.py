@@ -3,7 +3,7 @@ import random
 from PlayerGUI import PlayerGUI
 from BotPlayerGUI import BotPlayerGUI
 import MahjongGUIEnv
-
+import datetime
 
 # Color constants
 WHITE = (255, 255, 255)
@@ -65,7 +65,7 @@ class MahjongGUI:
                     self.render()
                     self.clock.tick(120)
         log = self.game_env.log
-        with open('game_log.txt', 'w') as f:
+        with open(f'game_log_{datetime.datetime.now()}.txt', 'w') as f:
             for entry in log:
                 f.write(f"{entry}\n")
         pygame.quit()
