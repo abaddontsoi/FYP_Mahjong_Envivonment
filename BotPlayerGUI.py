@@ -9,10 +9,9 @@ class BotPlayerGUI(PlayerGUI):
     def discard(self):
         return self.hand.pop(random.randint(0, len(self.hand) - 1))
 
-    def check_possible_calls(self, call_tile: MahjongTiles.MahjongTiles, chow_allowed = False):
-        actions = []
-        
-        return actions
-
-    def display_hand(self):
-        return
+    def decide_call_action(self, call_tile: MahjongTiles.MahjongTiles, possible_actions: list):
+        if not possible_actions:
+            return None
+        action = random.choice(possible_actions)
+        print(f"Bot Player {self.id} decides to {action} on tile {call_tile.classId}")
+        return action

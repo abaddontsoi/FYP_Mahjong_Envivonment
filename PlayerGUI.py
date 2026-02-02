@@ -126,7 +126,7 @@ class PlayerGUI:
         for t in self.hand:
             if t.classId == call_tile_id:
                 count += 1
-        if count == 3:
+        if count == 3 and len(self.game_env.deck) > 1:
             actions.append('kong')
         
         # 'pong'

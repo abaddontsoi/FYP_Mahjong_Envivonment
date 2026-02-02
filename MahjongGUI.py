@@ -65,9 +65,10 @@ class MahjongGUI:
                     self.render()
                     self.clock.tick(120)
         log = self.game_env.log
-        with open(f'game_log_{datetime.datetime.now()}.txt', 'w') as f:
-            for entry in log:
-                f.write(f"{entry}\n")
+        with open(f'game_log_{datetime.datetime.now()}.json', 'w') as f:
+            import json
+            json.dump(log, f, indent=4)
+
         pygame.quit()
 
     # Event handler
@@ -95,9 +96,9 @@ class MahjongGUI:
         # Player hand display
         players = screen_items['players']
         for idx, player in enumerate(players):
-            if player.__class__ == PlayerGUI and player.__class__ != BotPlayerGUI:
-                for tile in player.hand:
-                    self.sprites.add(tile)
+            # if player.__class__ == PlayerGUI and player.__class__ != BotPlayerGUI:
+            for tile in player.hand:
+                self.sprites.add(tile)
         
         # Player called tuples display
         players_called_tuples = screen_items['players_called_tuples']
@@ -123,7 +124,7 @@ class MahjongGUI:
 
         self.sprites.draw(self.screen)
         self.ui_sprites.draw(self.screen)
-
+        # print(f"Current game state: {self.game_env.game_state}")
         pygame.display.flip()
 
 
