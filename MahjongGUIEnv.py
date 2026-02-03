@@ -15,6 +15,7 @@ game_states = [
     'pooling_for_action', 
     'player_take_action',
     'player_choose_chow_tiles',
+    'processing_call_queue',
     'ending_round', 
     'ending_wind', 
     'ending_game'
@@ -53,6 +54,12 @@ class MahjongGUIEnv:
         self.current_player_on_draw_actions = []
         self.current_player_chow_options = []
         self.current_chow_action_player = None
+        self.call_queue = {
+            'win': [],
+            'kong': [],
+            'pong': [],
+            'chow': []
+        }
 
         # Logging related
         self.log = []
@@ -311,16 +318,14 @@ class MahjongGUIEnv:
                     any_player_has_action = True
                     break
             if not any_player_has_action:
-                # No player has any action, move discard buffer to discard pool
-                print(f"Tile {self.discard_buffer} added to discard pool.")
-                self.discard_pool.append(self.discard_buffer)
-                self.discard_buffer = None
-                self.call_actions = []
+                # Process the call queue
+                self.game_state = 'processing_call_queue'
+                return
 
                 # Allow next player to draw (original order)
-                self.current_player += 1
-                self.current_player %= 4
-                self.game_state = 'player_drawing_from_deck'
+                # self.current_player += 1
+                # self.current_player %= 4
+                # self.game_state = 'player_drawing_from_deck'
             else:
                 print(self.call_actions)
                 for i in range(1, 4):
@@ -337,84 +342,23 @@ class MahjongGUIEnv:
 
                         # Handle action
                         if chosen_action == 'win':
-                            self.end_round = True
-                            print(f"Player {self.players[action_player].id} wins from {self.players[self.current_player].id}!")
-                            winning_faan = self.players[action_player].win(self.discard_buffer)
-                            print(f"Winning hand faan: {winning_faan}")
-                            self.game_state = 'ending_round'
-                            self.log.append({
-                                'player_id': self.players[action_player].id,
-                                'action': 'win',
-                                'player_hand': [tile.classId for tile in self.players[action_player].hand],
-                                'called_tuples': [[tile.classId for tile in tup] for tup in self.players[action_player].called_tuples],
-                                'discard_pool': [tile.classId for tile in self.discard_pool],
-                                'call_tile': self.discard_buffer.classId
-                            })
-                            break
+                            self.call_queue['win'].append(action_player)
+                            self.call_actions[i - 1] = []
                         elif chosen_action == 'kong':
-                            self.players[action_player].kong(self.discard_buffer)
-                            # Draw 1 tile
-                            self.players[action_player].draw_tiles([self.deck.pop(0)])
-                            self.log.append({
-                                'player_id': self.players[action_player].id,
-                                'action': 'kong',
-                                'player_hand': [tile.classId for tile in self.players[action_player].hand],
-                                'called_tuples': [[tile.classId for tile in tup] for tup in self.players[action_player].called_tuples],
-                                'discard_pool': [tile.classId for tile in self.discard_pool],
-                                'call_tile': self.discard_buffer.classId
-                            })
-                            self.discard_buffer = None
+                            self.call_queue['kong'].append(action_player)
+                            self.call_actions[i - 1] = []
+                            return
                         elif chosen_action == 'pong':
-                            self.players[action_player].pong(self.discard_buffer)
-                            self.log.append({
-                                'player_id': self.players[action_player].id,
-                                'action': 'pong',
-                                'player_hand': [tile.classId for tile in self.players[action_player].hand],
-                                'called_tuples': [[tile.classId for tile in tup] for tup in self.players[action_player].called_tuples],
-                                'discard_pool': [tile.classId for tile in self.discard_pool],
-                                'call_tile': self.discard_buffer.classId
-                            })
-                            self.discard_buffer = None
+                            self.call_queue['pong'].append(action_player)
+                            self.call_actions[i - 1] = []
                         elif chosen_action == 'chow':
-                            if self.discard_buffer:
-                                self.current_player_chow_options = self.players[action_player].get_chow_options(self.discard_buffer)
-                                if self.current_player_chow_options:
-                                    self.players[action_player].chow(self.discard_buffer, self.current_player_chow_options[0])
-                                    self.current_player_chow_options = []
-                                    self.log.append({
-                                        'player_id': self.players[action_player].id,
-                                        'action': 'chow',
-                                        'player_hand': [tile.classId for tile in self.players[action_player].hand],
-                                        'called_tuples': [[tile.classId for tile in tup] for tup in self.players[action_player].called_tuples],
-                                        'discard_pool': [tile.classId for tile in self.discard_pool],
-                                        'call_tile': self.discard_buffer.classId
-                                    })
-                                    self.discard_buffer = None
-                        elif chosen_action == 'pass':
-                            # If all players pass, add to discard pool
-                            if i == 3:
-                                print(f"Tile {self.discard_buffer} added to discard pool.")
-                                self.discard_pool.append(self.discard_buffer)
-                                self.discard_buffer = None
-
-                                # Allow next player to draw (original order)
-                                self.current_player = action_player + 1
-                                self.current_player %= 4
-                                self.game_state = 'player_drawing_from_deck'
-
-                        # Discard
-                        if chosen_action != 'pass' and chosen_action is not None:
-                            self.game_state = 'waiting_discard'
-                            self.current_chow_action_player = None
-                            self.current_player = action_player
-                            self.call_actions = []
-                            break
-                        else:
-                            # Original order
-                            self.current_player += 1
-                            self.current_player %= 4
-                            self.game_state = 'player_drawing_from_deck'
-                            self.current_chow_action_player = None
+                            self.current_player_chow_options = self.players[action_player].get_chow_options(self.discard_buffer)
+                            if self.current_player_chow_options:
+                                self.call_queue['chow'].append((action_player, self.current_player_chow_options[0]))
+                                self.call_actions[i - 1] = []
+                                self.current_player_chow_options = []
+                        elif chosen_action == 'pass' or chosen_action is None:
+                            self.call_actions[i - 1] = []
                     else:
                         print(f"Player {self.players[action_player].id} turn to act.")
                         print(f"Player {self.players[action_player].id} has actions: {self.call_actions[i-1]}")
@@ -430,43 +374,14 @@ class MahjongGUIEnv:
 
                                         # Handle action
                                         if chosen_action == 'win':
-                                            self.end_round = True
-                                            print(f"Player {self.players[action_player].id} wins from {self.players[self.current_player].id}!")
-                                            winning_faan = self.players[action_player].win(self.discard_buffer)
-                                            print(f"Winning hand faan: {winning_faan}")
-                                            self.log.append({
-                                                'player_id': self.players[action_player].id,
-                                                'action': 'win',
-                                                'player_hand': [tile.classId for tile in self.players[action_player].hand],
-                                                'called_tuples': [[tile.classId for tile in tup] for tup in self.players[action_player].called_tuples],
-                                                'discard_pool': [tile.classId for tile in self.discard_pool],
-                                                'call_tile': self.discard_buffer.classId
-                                            })
-                                            break
+                                            self.call_queue['win'].append(action_player)
+                                            self.call_actions[i - 1] = []
                                         elif chosen_action == 'kong':
-                                            self.players[action_player].kong(self.discard_buffer)
-                                            # Draw 1 tile
-                                            self.players[action_player].draw_tiles([self.deck.pop(0)])
-                                            self.log.append({
-                                                'player_id': self.players[action_player].id,
-                                                'action': 'kong',
-                                                'player_hand': [tile.classId for tile in self.players[action_player].hand],
-                                                'called_tuples': [[tile.classId for tile in tup] for tup in self.players[action_player].called_tuples],
-                                                'discard_pool': [tile.classId for tile in self.discard_pool],
-                                                'call_tile': self.discard_buffer.classId
-                                            })
-                                            self.discard_buffer = None
+                                            self.call_queue['kong'].append(action_player)
+                                            self.call_actions[i - 1] = []
                                         elif chosen_action == 'pong':
-                                            self.players[action_player].pong(self.discard_buffer)
-                                            self.log.append({
-                                                'player_id': self.players[action_player].id,
-                                                'action': 'pong',
-                                                'player_hand': [tile.classId for tile in self.players[action_player].hand],
-                                                'called_tuples': [[tile.classId for tile in tup] for tup in self.players[action_player].called_tuples],
-                                                'discard_pool': [tile.classId for tile in self.discard_pool],
-                                                'call_tile': self.discard_buffer.classId
-                                            })
-                                            self.discard_buffer = None
+                                            self.call_queue['pong'].append(action_player)
+                                            self.call_actions[i - 1] = []
                                         elif chosen_action == 'chow':
                                             self.current_player_chow_options = self.players[action_player].get_chow_options(self.discard_buffer)
                                             if len(self.current_player_chow_options) > 1:
@@ -474,62 +389,16 @@ class MahjongGUIEnv:
                                                 print(f"Player {self.players[action_player].id} chow options: {[ [tile.classId for tile in option] for option in self.current_player_chow_options ]}")
                                                 self.current_chow_action_player = action_player
                                                 self.game_state = 'player_choose_chow_tiles'
-                                                break
+                                                return
                                             elif len(self.current_player_chow_options) == 1: 
-                                                self.players[action_player].chow(self.discard_buffer, self.current_player_chow_options[0])
-                                                self.current_player_chow_options = []
-                                            self.log.append({
-                                                'player_id': self.players[action_player].id,
-                                                'action': 'chow',
-                                                'player_hand': [tile.classId for tile in self.players[action_player].hand],
-                                                'called_tuples': [[tile.classId for tile in tup] for tup in self.players[action_player].called_tuples],
-                                                'discard_pool': [tile.classId for tile in self.discard_pool],
-                                                'call_tile': self.discard_buffer.classId
-                                            })
-                                            self.discard_buffer = None
-                                        elif chosen_action == 'pass':
-                                            # If all players pass, add to discard pool
-                                            if i == 3:
-                                                print(f"Tile {self.discard_buffer} added to discard pool.")
-                                                self.discard_pool.append(self.discard_buffer)
-                                                self.discard_buffer = None
-
-                                                # Allow next player to draw (original order)
-                                                self.current_player = action_player + 1
-                                                self.current_player %= 4
-                                                self.game_state = 'player_drawing_from_deck'
-                                                self.call_actions = []
-
-                                if chosen_action == 'win' :
-                                    self.game_state = 'ending_round'
-                                    break
-
-                                # Discard
-                                if chosen_action not in ['pass', None]:
-                                    if self.game_state != 'player_choose_chow_tiles':
-                                        self.game_state = 'waiting_discard'
-                                        self.current_chow_action_player = None
-                                        self.current_player = action_player
-                                        self.discard_buffer = None
-                                        self.call_actions = []
-                                        break
-                                else:
-                                    # Original order
-                                    self.current_player += 1
-                                    self.current_player %= 4
-                                    self.game_state = 'player_drawing_from_deck'
-                                    self.current_chow_action_player = None
+                                                self.call_queue['chow'].append((action_player, self.current_player_chow_options[0]))
+                                                self.call_actions[i - 1] = []
+                                        elif chosen_action == 'pass' or chosen_action is None:
+                                            self.call_actions[i - 1] = []
 
         if self.game_state == 'player_choose_chow_tiles':
             action_player = self.current_chow_action_player
-            if type(self.players[action_player]) == BotPlayerGUI:
-                chosen_option = self.current_player_chow_options[0]
-                self.players[action_player].chow(self.discard_buffer, chosen_option)
-                self.discard_buffer = None
-                self.current_player_chow_options = []
-                self.game_state = 'waiting_discard'
-                self.current_chow_action_player = None
-            elif self.event_buffer is not None and self.event_buffer.type == pygame.MOUSEBUTTONDOWN:
+            if self.event_buffer is not None and self.event_buffer.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = self.event_buffer.pos
                 current_player = self.players[action_player]
 
@@ -538,16 +407,81 @@ class MahjongGUIEnv:
                     if chow_btn.rect.collidepoint(mouse_pos):
                         chosen_option = self.current_player_chow_options[idx]
                         print(f"Player {current_player.id} chose chow option: {[tile.classId for tile in chosen_option]}")
+                        self.call_queue['chow'].append((action_player, chosen_option))
+                        self.call_actions[action_player - 1] = []
 
-                        self.players[action_player].chow(self.discard_buffer, chosen_option)
-                        self.game_state = 'waiting_discard'
-                        self.call_actions = []
-                        self.current_player_chow_options = []
-                        self.current_chow_action_player = None
-                        self.current_player = action_player
-                        self.event_buffer = None
-                        self.discard_buffer = None
+                        # self.players[action_player].chow(self.discard_buffer, chosen_option)
+                        self.game_state = 'processing_call_queue'
+                        # self.call_actions = []
                         break
+        
+        if self.game_state == 'processing_call_queue':
+            if self.call_queue['win']:
+                action_player = self.call_queue['win'][0]
+                self.end_round = True
+                print(f"Player {self.players[action_player].id} wins from {self.players[self.current_player].id}!")
+                winning_faan = self.players[action_player].win(self.discard_buffer)
+                print(f"Winning hand faan: {winning_faan}")
+                self.game_state = 'ending_round'
+                self.log.append({
+                    'player_id': self.players[action_player].id,
+                    'action': 'win',
+                    'player_hand': [tile.classId for tile in self.players[action_player].hand],
+                    'called_tuples': [[tile.classId for tile in tup] for tup in self.players[action_player].called_tuples],
+                    'discard_pool': [tile.classId for tile in self.discard_pool],
+                    'call_tile': self.discard_buffer.classId
+                })
+                self.event_buffer = None
+                self.discard_buffer = None 
+            elif self.call_queue['kong']:
+                action_player = self.call_queue['kong'][0]
+                self.players[action_player].kong(self.discard_buffer)
+                print(f"Player {self.players[action_player].id} declared kong.")
+                # Draw 1 tile
+                self.players[action_player].draw_tiles([self.deck.pop(0)])
+                self.current_player = action_player
+                self.event_buffer = None
+                self.discard_buffer = None 
+                self.game_state = 'waiting_discard'
+            elif self.call_queue['pong']:
+                action_player = self.call_queue['pong'][0]
+                self.players[action_player].pong(self.discard_buffer)
+                print(f"Player {self.players[action_player].id} declared pong.")
+                self.current_player = action_player
+                self.event_buffer = None
+                self.discard_buffer = None 
+                self.game_state = 'waiting_discard'
+            elif self.call_queue['chow']:
+                action_player = self.call_queue['chow'][0][0]
+                chosen_option = self.call_queue['chow'][0][1]
+                self.players[action_player].chow(self.discard_buffer, chosen_option)
+                print(f"Player {self.players[action_player].id} declared chow.")
+                # No draw after chow
+                self.current_player = action_player
+                self.current_player_chow_options = []
+                self.current_chow_action_player = None
+                self.event_buffer = None
+                self.discard_buffer = None 
+                self.game_state = 'waiting_discard'
+            else:
+                # No calls, move discard buffer to discard pool
+                print(f"Tile {self.discard_buffer} added to discard pool.")
+                self.discard_pool.append(self.discard_buffer)
+                self.discard_buffer = None
+
+                # Allow next player to draw (original order)
+                self.current_player += 1
+                self.current_player %= 4
+                self.game_state = 'player_drawing_from_deck'
+            
+            # Clear call queue and actions
+            self.call_actions = []
+            self.call_queue = {
+                'win': [],
+                'kong': [],
+                'pong': [],
+                'chow': []
+            }
 
         if self.game_state == 'ending_round':
             print("Round ended.")
@@ -660,7 +594,7 @@ class MahjongGUIEnv:
                 
             self.screen_items['player_on_draw_action_buttons'].extend(on_draw_buttons)
         
-        if self.current_player_chow_options:
+        if self.current_player_chow_options and self.current_chow_action_player is not None:
             hand_y = 1000 - ((self.current_chow_action_player) % 4) * (self.players[(self.current_chow_action_player) % 4].hand[0].rect.height + 20)
             button_start_x = 1000
             button_y = hand_y  - 100 # Above tiles

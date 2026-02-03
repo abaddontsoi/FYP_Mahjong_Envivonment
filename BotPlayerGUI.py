@@ -12,6 +12,9 @@ class BotPlayerGUI(PlayerGUI):
     def decide_call_action(self, call_tile: MahjongTiles.MahjongTiles, possible_actions: list):
         if not possible_actions:
             return None
+        if 'win' in possible_actions:
+            print(f"Bot Player {self.id} decides to win on tile {call_tile.classId}")
+            return 'win'
         action = random.choice(possible_actions)
         print(f"Bot Player {self.id} decides to {action} on tile {call_tile.classId}")
         return action
