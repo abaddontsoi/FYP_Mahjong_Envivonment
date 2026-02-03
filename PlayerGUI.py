@@ -11,6 +11,7 @@ class PlayerGUI:
 
         # Each player's faan calculator
         self.faan_calculator = FaanCalculator()
+        self.score = 0
 
     def assign_env(self, env):
         self.game_env = env

@@ -1,5 +1,19 @@
 from MahjongTiles import MahjongTiles
 
+def faan_to_score(faan_count: int, self_drawn: bool):
+    # (win_score, self_drawn_score)
+    score_table = [(16, 24), (32, 48), (64, 96), (128, 192)]
+    for i in range(4, 11):
+        if i % 2 == 0:
+            score_table.append((score_table[i-1][0]*1.5, score_table[i-1][1]*1.5))
+        else:
+            score_table.append((score_table[i-2][0]*2, score_table[i-2][1]*2))
+
+    if self_drawn:
+        return score_table[faan_count - 1][1]
+    
+    return score_table[faan_count - 1][0]
+
 class FaanCalculator:
     def __init__(self, round = 0, position = 0):
         self.FaanList = {

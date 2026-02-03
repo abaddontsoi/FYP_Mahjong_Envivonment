@@ -88,6 +88,11 @@ class MahjongGUI:
         self.game_env.refresh_screen_items()
         screen_items = self.game_env.get_screen_items()
 
+        # Players scores display
+        player_scores = screen_items['player_scores']
+        for score_surface, score_rect in player_scores:
+            self.screen.blit(score_surface, score_rect)
+
         # Discard pool display
         discard_pool = screen_items['discard_pool']
         for tile in discard_pool:

@@ -4,7 +4,7 @@ from PlayerGUI import PlayerGUI
 from BotPlayerGUI import BotPlayerGUI
 import pygame
 from ActionButton import ActionButton
-
+from FaanCalculator import faan_to_score
 
 game_states = [
     'initializing_round', 
@@ -157,7 +157,15 @@ class MahjongGUIEnv:
                 # Handle action
                 if chosen_action == 'self_drawn':
                     self.end_round = True
-                    print(f"Player {self.players[action_player].id} wins!")
+                    print(f"Player {self.players[action_player].id} wins!(self drawn)")
+                    winning_faan = self.players[action_player].win()
+                    total_faan = sum([val for name, val in winning_faan])
+                    score = faan_to_score(total_faan, True)
+                    each_player_lose = score / 3
+                    current_player.score += score
+                    for player in self.players:
+                        if player != current_player:
+                            player.score -= each_player_lose
                     self.game_state = 'ending_round'
                 elif chosen_action == 'additional_kong':
                     self.players[action_player].additional_kong()
@@ -191,6 +199,13 @@ class MahjongGUIEnv:
                             self.end_round = True
                             winning_faan = self.players[action_player].win()
                             print(f"Player {current_player.id} wins (self drawn): {winning_faan}")
+                            total_faan = sum([val for name, val in winning_faan])
+                            score = faan_to_score(total_faan, True)
+                            each_player_lose = score / 3
+                            current_player.score += score
+                            for player in self.players:
+                                if player != current_player:
+                                    player.score -= each_player_lose
                             self.game_state = 'ending_round'
                             self.current_player_on_draw_actions = []
                             self.log.append({
@@ -321,19 +336,13 @@ class MahjongGUIEnv:
                 # Process the call queue
                 self.game_state = 'processing_call_queue'
                 return
-
-                # Allow next player to draw (original order)
-                # self.current_player += 1
-                # self.current_player %= 4
-                # self.game_state = 'player_drawing_from_deck'
             else:
-                print(self.call_actions)
                 for i in range(1, 4):
                     action_player = (self.current_player + i) % 4
                     if self.players[action_player].__class__ is BotPlayerGUI:
-                        print(f"Bot Player {self.players[action_player].id} turn to act.")
-                        print(f"self.call_actions: {self.call_actions}")
-                        print(f"Player {self.players[action_player].id} has actions: {self.call_actions[i-1]}")
+                        # print(f"Bot Player {self.players[action_player].id} turn to act.")
+                        # print(f"self.call_actions: {self.call_actions}")
+                        # print(f"Player {self.players[action_player].id} has actions: {self.call_actions[i-1]}")
                         if not self.call_actions[i-1]:
                             # No action, skip
                             continue
@@ -360,8 +369,8 @@ class MahjongGUIEnv:
                         elif chosen_action == 'pass' or chosen_action is None:
                             self.call_actions[i - 1] = []
                     else:
-                        print(f"Player {self.players[action_player].id} turn to act.")
-                        print(f"Player {self.players[action_player].id} has actions: {self.call_actions[i-1]}")
+                        # print(f"Player {self.players[action_player].id} turn to act.")
+                        # print(f"Player {self.players[action_player].id} has actions: {self.call_actions[i-1]}")
                         if self.screen_items['player_action_buttons']:
                             possible_actions = self.screen_items['player_action_buttons'][i-1]
                             if self.event_buffer is not None and self.discard_buffer and self.event_buffer.type == pygame.MOUSEBUTTONDOWN:
@@ -421,6 +430,10 @@ class MahjongGUIEnv:
                 self.end_round = True
                 print(f"Player {self.players[action_player].id} wins from {self.players[self.current_player].id}!")
                 winning_faan = self.players[action_player].win(self.discard_buffer)
+                total_faan = sum([val for name, val in winning_faan])
+                score = faan_to_score(total_faan, False)
+                self.players[action_player].score += score
+                self.players[self.current_player].score -= score
                 print(f"Winning hand faan: {winning_faan}")
                 self.game_state = 'ending_round'
                 self.log.append({
@@ -476,6 +489,7 @@ class MahjongGUIEnv:
             
             # Clear call queue and actions
             self.call_actions = []
+            self.current_player_chow_options = []
             self.call_queue = {
                 'win': [],
                 'kong': [],
@@ -530,20 +544,32 @@ class MahjongGUIEnv:
             'discard_pool': [],
             'player_action_buttons': [],
             'player_on_draw_action_buttons': [],
-            'player_chow_option_buttons': []
+            'player_chow_option_buttons': [],
+            'player_scores': []
         }
 
+        # Display player scores on the top-right corner
         for idx, player in enumerate(self.players):
-            player.align_tile_sprites()
-            for tile in player.hand:
-                tile.rect.topleft = (tile.rect.topleft[0], 1000 - idx * (tile.rect.height + 20))
-            self.screen_items['players'].append(player)            
+            score_text = f"{self.players[idx].id} Score: {player.score}"
+            font = pygame.font.Font(None, 36)
+            text_surface = font.render(score_text, True, (255, 255, 255))
+            text_rect = text_surface.get_rect(topright=(1800, 50 + idx * 40))
+            self.screen_items['player_scores'].append((text_surface, text_rect))
 
+        for idx, player in enumerate(self.players):
             player.align_called_tuple_sprites()
             for tuple in player.called_tuples:
                 for tile in tuple:
                     tile.rect.topleft = (tile.rect.topleft[0], 1000 - idx * (tile.rect.height + 20))
             self.screen_items['players_called_tuples'].append(player.called_tuples)
+            
+            if player.__class__ is BotPlayerGUI:
+                continue
+            player.align_tile_sprites()
+            for tile in player.hand:
+                tile.rect.topleft = (tile.rect.topleft[0], 1000 - idx * (tile.rect.height + 20))
+            self.screen_items['players'].append(player)            
+
 
         # Collect tiles from discard pool
         # Update location for each tile in discard pool, each row should have at most 20 tiles
