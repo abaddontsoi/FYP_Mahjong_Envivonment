@@ -61,14 +61,16 @@ class FaanCalculator:
         self.called_tuples = called_tuples
     
     def check_tuple_type(self, tuple: tuple[MahjongTiles]):
-        if len(tuple) == 4:
-            if tuple[0].classId == tuple[1].classId == tuple[2].classId == tuple[3].classId:
+        # Convert to list and sort
+        call_tuple = sorted(list(tuple), key=lambda x: x.classId)
+        if len(call_tuple) == 4:
+            if call_tuple[0].classId == call_tuple[1].classId == call_tuple[2].classId == call_tuple[3].classId:
                 return 'kong'
-        if len(tuple) == 3:
-            if tuple[0].classId == tuple[1].classId == tuple[2].classId:
+        if len(call_tuple) == 3:
+            if call_tuple[0].classId == call_tuple[1].classId == call_tuple[2].classId:
                 return 'pong'
-            if tuple[2].tile_number == tuple[1].tile_number + 1 and tuple[1].tile_number == tuple[0].tile_number + 1:
-                if tuple[0].tile_suit == tuple[1].tile_suit == tuple[2].tile_suit:
+            if call_tuple[2].tile_number == call_tuple[1].tile_number + 1 and call_tuple[1].tile_number == call_tuple[0].tile_number + 1:
+                if call_tuple[0].tile_suit == call_tuple[1].tile_suit == call_tuple[2].tile_suit:
                     return 'chow'
         
         return None
