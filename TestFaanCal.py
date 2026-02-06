@@ -884,6 +884,24 @@ class TestFaanCal(unittest.TestCase):
         self.calculator.self_drawn_flag = False
         self.calculator.consecutive_kong_count = 0
         
+        # Little/Great Dragon hand
+        self.calculator.called_tuples = [
+            (MahjongTiles(32), MahjongTiles(32),  MahjongTiles(32)), # Red Dragon Pong
+            (MahjongTiles(33), MahjongTiles(33),  MahjongTiles(33)), # White Dragon Pong
+            (MahjongTiles(34), MahjongTiles(34),  MahjongTiles(34))  # Green Dragon Pong
+        ]
+        self.calculator.hand = [
+            MahjongTiles(5), MahjongTiles(6), MahjongTiles(7),  # Chow
+            MahjongTiles(8), MahjongTiles(8)  # Pair
+        ]
+        expected_faan = [('great_dragon_hand', 10)]
+        excluded_faan = ['little_dragon_hand', 'red', 'white', 'green']
+        faan_result = self.calculator.check_faan_match()
+        for faan in expected_faan:
+            self.assertIn(faan, faan_result)
+        for faan in excluded_faan:
+            self.assertNotIn(faan, faan_result)
+        
         # Pure Suit and All Kong Hand
         self.calculator.called_tuples = [
             (MahjongTiles(1), MahjongTiles(1), MahjongTiles(1), MahjongTiles(1)),  # Kong of 1 Characters

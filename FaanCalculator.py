@@ -1,6 +1,8 @@
 from MahjongTiles import MahjongTiles
 
 def faan_to_score(faan_count: int, self_drawn: bool):
+    # Set to maximum 10 faan
+    faan_count = min(faan_count, 10)
     # (win_score, self_drawn_score)
     score_table = [(16, 24), (32, 48), (64, 96), (128, 192)]
     for i in range(4, 11):
@@ -743,17 +745,16 @@ class FaanCalculator:
                 faan_achieved.append((faan_name, faan_value))
         
         # Some of the small value faans are removed in final calculation
+        removing_faan = []
         for faan in faan_achieved:
-            if faan[0] == 'self_drawn' and any([self.self_drawn_after_kong(), self.self_drawn_on_last_tile(), self.self_drawn_after_2kong()]):
-                faan_achieved.remove(faan)
-            if faan[0] == 'white' and (self.little_dragon_hand() or self.great_dragon_hand()):
-                faan_achieved.remove(faan)
-            if faan[0] == 'green' and (self.little_dragon_hand() or self.great_dragon_hand()):
-                faan_achieved.remove(faan)
-            if faan[0] == 'red' and (self.little_dragon_hand() or self.great_dragon_hand()):
-                faan_achieved.remove(faan)
-            if faan[0] == 'all_pong_hand' and (self.four_hidden_pong() or self.all_kong_hand()):
-                faan_achieved.remove(faan)
-            
+            if faan[0] == 'little_dragon_hand':
+                removing_faan.extend(['white', 'green', 'red'])
+            if any([self.self_drawn_after_kong(), self.self_drawn_on_last_tile(), self.self_drawn_after_2kong()]):
+                removing_faan.append('self_drawn')
+            if any([self.four_hidden_pong(), self.all_kong_hand()]):
+                removing_faan.append('all_pong_hand')
+        
+        removing_faan = set(removing_faan)
+        faan_achieved = [faan for faan in faan_achieved if faan[0] not in removing_faan]
 
         return faan_achieved
