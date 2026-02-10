@@ -36,6 +36,7 @@ class MahjongGUI:
             BotPlayerGUI('Bot1'),
             BotPlayerGUI('Bot2'),
             BotPlayerGUI('Bot3'),
+            # BotPlayerGUI('Bot4'),
             PlayerGUI('You')
         ]) 
         random.shuffle(self.game_env.players)

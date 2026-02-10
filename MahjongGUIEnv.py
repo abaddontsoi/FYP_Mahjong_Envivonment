@@ -104,7 +104,7 @@ class MahjongGUIEnv:
         self.event_buffer = input_data
 
     # Trigger all players to update board state
-    def board_state(self):
+    def update_board_state(self):
         for player in self.players:
             player.update_board_state()
 
@@ -307,6 +307,7 @@ class MahjongGUIEnv:
                 current_player.faan_calculator.self_drawn_on_last_tile_flag = False
 
         if self.game_state == 'pooling_for_action':
+            self.update_board_state() # Update all players' board state for decision making
             if self.discard_buffer:
                 # Pool each player for call actions
                 has_call = False

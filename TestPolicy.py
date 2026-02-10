@@ -16,7 +16,7 @@ class TestPolicy(unittest.TestCase):
         self.call_tile = MahjongTiles(3)
 
     def test_extract_features(self):
-        self.policy.updat_board_state(self.discard_pool, self.hand, self.called_tuples)
+        self.policy.update_board_state(self.discard_pool, self.hand, self.called_tuples)
         existing, hand_existing, dominating_suit, pair_count, consec_2_count, alternating_consec_2_count, pong_kong_count = self.policy.extract_features()
         self.assertIn(dominating_suit, ['m', 'p', 's'])
         self.assertEqual(dominating_suit, 'm')  # Since hand has 9 m tiles, it should be the dominating suit
@@ -24,7 +24,7 @@ class TestPolicy(unittest.TestCase):
         self.assertEqual(alternating_consec_2_count, 7)
         
         self.hand = [MahjongTiles(i) for i in range(10, 19)] + [MahjongTiles(i) for i in range(28, 32)]
-        self.policy.updat_board_state(self.discard_pool, self.hand, self.called_tuples)
+        self.policy.update_board_state(self.discard_pool, self.hand, self.called_tuples)
         existing, hand_existing, dominating_suit, pair_count, consec_2_count, alternating_consec_2_count, pong_kong_count = self.policy.extract_features()
         self.assertIn(dominating_suit, ['m', 'p', 's'])
         self.assertEqual(dominating_suit, 'p')  # Since hand has 9 p tiles, it should be the dominating suit
@@ -32,7 +32,7 @@ class TestPolicy(unittest.TestCase):
         self.assertEqual(alternating_consec_2_count, 7)
         
         self.hand = [MahjongTiles(i) for i in range(19, 28)] + [MahjongTiles(i) for i in range(28, 32)]
-        self.policy.updat_board_state(self.discard_pool, self.hand, self.called_tuples)
+        self.policy.update_board_state(self.discard_pool, self.hand, self.called_tuples)
         existing, hand_existing, dominating_suit, pair_count, consec_2_count, alternating_consec_2_count, pong_kong_count = self.policy.extract_features()
         self.assertIn(dominating_suit, ['m', 'p', 's'])
         self.assertEqual(dominating_suit, 's')  # Since hand has 9 s tiles, it should be the dominating suit
@@ -55,7 +55,7 @@ class TestPolicy(unittest.TestCase):
             MahjongTiles(33),
             MahjongTiles(34)
         ]
-        self.policy.updat_board_state(self.discard_pool, self.hand, self.called_tuples)
+        self.policy.update_board_state(self.discard_pool, self.hand, self.called_tuples)
         existing, hand_existing, dominating_suit, pair_count, consec_2_count, alternating_consec_2_count, pong_kong_count = self.policy.extract_features()
         self.assertIn(dominating_suit, ['m', 'p', 's'])
         self.assertEqual(dominating_suit, 'm') # Since index() only returns the first occurrence of max count, hence is 'm'
@@ -69,6 +69,9 @@ class TestPolicy(unittest.TestCase):
     def test_decide_pong(self):
         result = self.policy.decide_pong(self.call_tile)
         self.assertFalse(result)
+
+    def test_decide_chow_helper(self):
+        ...
 
     def test_decide_chow(self):
         result = self.policy.decide_chow(self.call_tile)

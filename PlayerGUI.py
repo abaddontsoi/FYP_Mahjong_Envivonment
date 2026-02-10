@@ -1,5 +1,5 @@
 import MahjongTiles
-from FaanCalculator import FaanCalculator
+from FaanCalculator import FaanCalculator, check_tuple_type
 
 class PlayerGUI:
     def __init__(self, id = None):
@@ -46,7 +46,7 @@ class PlayerGUI:
         print(self.get_called_tuples_as_string())
 
     def check_tuple_type(self, tuple: tuple[MahjongTiles.MahjongTiles]):
-        return self.faan_calculator.check_tuple_type(tuple)
+        return check_tuple_type(tuple)
 
     def safe_get_option(self, options: list, prompt: str):
         while True:

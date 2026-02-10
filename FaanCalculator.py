@@ -16,6 +16,21 @@ def faan_to_score(faan_count: int, self_drawn: bool):
     
     return score_table[faan_count - 1][0]
 
+def check_tuple_type(tuple: tuple[MahjongTiles]):
+    # Convert to list and sort
+    call_tuple = sorted(list(tuple), key=lambda x: x.classId)
+    if len(call_tuple) == 4:
+        if call_tuple[0].classId == call_tuple[1].classId == call_tuple[2].classId == call_tuple[3].classId:
+            return 'kong'
+    if len(call_tuple) == 3:
+        if call_tuple[0].classId == call_tuple[1].classId == call_tuple[2].classId:
+            return 'pong'
+        if call_tuple[2].tile_number == call_tuple[1].tile_number + 1 and call_tuple[1].tile_number == call_tuple[0].tile_number + 1:
+            if call_tuple[0].tile_suit == call_tuple[1].tile_suit == call_tuple[2].tile_suit:
+                return 'chow'
+    
+    return None
+
 class FaanCalculator:
     def __init__(self, round = 0, position = 0):
         self.FaanList = {
@@ -62,21 +77,6 @@ class FaanCalculator:
         self.hand = hand
         self.called_tuples = called_tuples
     
-    def check_tuple_type(self, tuple: tuple[MahjongTiles]):
-        # Convert to list and sort
-        call_tuple = sorted(list(tuple), key=lambda x: x.classId)
-        if len(call_tuple) == 4:
-            if call_tuple[0].classId == call_tuple[1].classId == call_tuple[2].classId == call_tuple[3].classId:
-                return 'kong'
-        if len(call_tuple) == 3:
-            if call_tuple[0].classId == call_tuple[1].classId == call_tuple[2].classId:
-                return 'pong'
-            if call_tuple[2].tile_number == call_tuple[1].tile_number + 1 and call_tuple[1].tile_number == call_tuple[0].tile_number + 1:
-                if call_tuple[0].tile_suit == call_tuple[1].tile_suit == call_tuple[2].tile_suit:
-                    return 'chow'
-        
-        return None
-
     def find_first_by_classId(self, classId: int, provided_list: list[MahjongTiles] = None):
         if not provided_list:
             for i in range(len(self.hand)):
@@ -118,7 +118,7 @@ class FaanCalculator:
                     tiles = sorted([t for idx, t in enumerate(remaining) if idx in tile_indices], key= lambda x: x.classId)
                     tiles = tuple(tiles)
                     
-                    tuple_type = self.check_tuple_type(tiles)
+                    tuple_type = check_tuple_type(tiles)
                     if tuple_type != None:
                         return 1 + self.count_tuples([t for t in remaining if t not in tiles])
             
@@ -171,7 +171,7 @@ class FaanCalculator:
     
     def white(self):
         for t in self.called_tuples:
-            if self.check_tuple_type(t) == 'pong':
+            if check_tuple_type(t) in ['pong', 'kong']:
                 if t[0].classId == 32:
                     return True
         
@@ -187,7 +187,7 @@ class FaanCalculator:
     
     def green(self):
         for t in self.called_tuples:
-            if self.check_tuple_type(t) == 'pong':
+            if check_tuple_type(t) in ['pong', 'kong']:
                 if t[0].classId == 33:
                     return True
         
@@ -203,7 +203,7 @@ class FaanCalculator:
     
     def red(self):
         for t in self.called_tuples:
-            if self.check_tuple_type(t) == 'pong':
+            if check_tuple_type(t) in ['pong', 'kong']:
                 if t[0].classId == 34:
                     return True
         
@@ -221,7 +221,7 @@ class FaanCalculator:
         # Round wind mapping: 0-East, 1-South, 2-West, 3-North
         # Check called tuples first
         for tuple in self.called_tuples:
-            if self.check_tuple_type(tuple) == 'pong':
+            if check_tuple_type(tuple) in ['pong', 'kong']:
                 if tuple[0].classId == 28 + self.round:
                     return True
         
@@ -241,7 +241,7 @@ class FaanCalculator:
         # Round position mapping: 0-East, 1-South, 2-West, 3-North
         # Check called tuples first
         for tuple in self.called_tuples:
-            if self.check_tuple_type(tuple) == 'pong':
+            if check_tuple_type(tuple) in ['pong', 'kong']:
                 if tuple[0].classId == 28 + self.position:
                     return True
         
@@ -286,7 +286,7 @@ class FaanCalculator:
 
     def all_chow_hand(self):
         for t in self.called_tuples:
-            if self.check_tuple_type(t) != 'chow':
+            if check_tuple_type(t) != 'chow':
                 return False
         
         for i in range(1, len(self.hand)):
@@ -312,7 +312,7 @@ class FaanCalculator:
     def all_pong_hand(self):
         # Consists of all pong/kong tuples and a pair
         for t in self.called_tuples:
-            if self.check_tuple_type(t) != 'pong' and self.check_tuple_type(t) != 'kong':
+            if check_tuple_type(t) not in ['pong', 'kong']:
                 return False
             
         # Find out the only pair in hand
@@ -375,7 +375,7 @@ class FaanCalculator:
 
         # Check for called tuples first
         for t in self.called_tuples:
-            if self.check_tuple_type(t) == 'pong' or self.check_tuple_type(t) == 'kong':
+            if check_tuple_type(t) in ['pong', 'kong']:
                 if t[0].classId == 32:
                     white = 'pong'
                 elif t[0].classId == 33:
@@ -439,7 +439,7 @@ class FaanCalculator:
         red_found = False
 
         for t in self.called_tuples:
-            if self.check_tuple_type(t) == 'pong':
+            if check_tuple_type(t) in ['pong', 'kong']:
                 if t[0].classId == 32:
                     white_found = True
                 elif t[0].classId == 33:
@@ -466,7 +466,7 @@ class FaanCalculator:
             return False
         kong_count = 0
         for t in self.called_tuples:
-            if self.check_tuple_type(t) == 'kong':
+            if check_tuple_type(t) == 'kong':
                 kong_count += 1
         if kong_count < 2:
             return False
@@ -579,7 +579,7 @@ class FaanCalculator:
         north = None
 
         for t in self.called_tuples:
-            if self.check_tuple_type(t) == 'pong':
+            if check_tuple_type(t) == 'pong':
                 if t[0].classId == 28:
                     east = 'pong'
                 elif t[0].classId == 29:
@@ -642,7 +642,7 @@ class FaanCalculator:
         north_found = False
 
         for t in self.called_tuples:
-            if self.check_tuple_type(t) == 'pong':
+            if check_tuple_type(t) == 'pong':
                 if t[0].classId == 28:
                     east_found = True
                 elif t[0].classId == 29:
@@ -681,7 +681,7 @@ class FaanCalculator:
         # Must have 4 kongs called
         kong_count = 0
         for t in self.called_tuples:
-            if self.check_tuple_type(t) == 'kong':
+            if check_tuple_type(t) == 'kong':
                 kong_count += 1
         if kong_count != 4:
             return False
