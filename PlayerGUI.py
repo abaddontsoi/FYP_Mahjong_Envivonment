@@ -70,6 +70,9 @@ class PlayerGUI:
         self.faan_calculator.robbing_additional_kong_flag = False
         self.faan_calculator.self_drawn_on_last_tile_flag = False
 
+    def update_board_state(self):
+            return 
+
     def find_first_by_number(self, tile_number: int, suit, provided_list: list[MahjongTiles.MahjongTiles] = None):
         if not provided_list:
             for i in range(len(self.hand)):

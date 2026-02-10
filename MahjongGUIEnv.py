@@ -100,9 +100,13 @@ class MahjongGUIEnv:
         self.players.append(self.players[0])
         self.players.pop()
 
-
     def receive_input(self, input_data: pygame.event.Event):
         self.event_buffer = input_data
+
+    # Trigger all players to update board state
+    def board_state(self):
+        for player in self.players:
+            player.update_board_state()
 
     # State based update method
     def update_game_state(self):
@@ -270,6 +274,12 @@ class MahjongGUIEnv:
                     'discard_pool': [tile.classId for tile in self.discard_pool],
                     'discarded_tile': self.discard_buffer.classId
                 })
+                other_players_call_tuples = []
+                for i in range(3):
+                    display_current_player = self.players[(self.current_player + 1 + i) % 4]
+                    other_players_call_tuples.append([str(tile) for tup in display_current_player.called_tuples for tile in tup])
+
+                print(f"Bot {self.players[action_player].id}'s view: {other_players_call_tuples}")
             elif self.event_buffer is not None and self.event_buffer.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = self.event_buffer.pos
                 current_player = self.players[action_player]

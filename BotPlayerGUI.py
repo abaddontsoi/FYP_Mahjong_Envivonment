@@ -1,30 +1,34 @@
 from PlayerGUI import PlayerGUI
 import MahjongTiles
 import random
+from Policy import Policy
 
 class BotPlayerGUI(PlayerGUI):
     def __init__(self, id = None):
         super().__init__(id)
+        self.policy = Policy()
 
-    def convert_hand_to_feature_vector(self):
-        m = [0]*9
-        s = [0]*9
-        p = [0]*9
-        z = [0]*7
-        for tile in self.hand:
-            if tile.tile_suit == 'm':
-                m[tile.tile_number - 1] += 1
-            elif tile.tile_suit == 's':
-                s[tile.tile_number - 1] += 1
-            elif tile.tile_suit == 'p':
-                p[tile.tile_number - 1] += 1
-            elif tile.tile_suit == 'z':
-                z[tile.tile_number - 1] += 1
-            
-        # Count for pairs
+    def view_other_players_call_tuples(self):
+        if self.game_env is None or self.round_position == -1:
+            return []
+        other_player_call_tuples = []
+        for i in range(3):
+            current_player = self.game_env.players[(self.round_position + 1 + i) % 4]
+            other_player_call_tuples.append(current_player.called_tuples)
+        return other_player_call_tuples
 
-        # Count for triplets missing 1
-        return (m, s, p, z)
+    def update_board_state(self):
+        if any([
+            self.game_env is None,
+            self.round_position == -1,
+            self.hand == [],
+        ]):
+            return
+        
+        # Getting 3 other players' call tuples
+        other_player_call_tuples = self.view_other_players_call_tuples()
+
+        self.policy.update_board_state(self.game_env.discard_pool, self.hand, other_player_call_tuples)
 
     def discard(self):
         return self.hand.pop(random.randint(0, len(self.hand) - 1))
