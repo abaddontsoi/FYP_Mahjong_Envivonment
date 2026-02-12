@@ -124,22 +124,16 @@ class PlayerGUI:
                 print(f"Possible win with {faan_count} faan.")
                 actions.append('win')
 
-        # 'kong'
+        # 'kong' and 'pong'
         call_tile_id = call_tile.classId
-        count = 0
-        for t in self.hand:
-            if t.classId == call_tile_id:
-                count += 1
-        if count == 3 and len(self.game_env.deck) > 1:
-            actions.append('kong')
-        
-        # 'pong'
         count = 0
         for t in self.hand:
             if t.classId == call_tile_id:
                 count += 1
         if count >= 2:
             actions.append('pong')
+        if count == 3 and len(self.game_env.deck) > 1:
+            actions.append('kong')
         
         # 'chow'
         if call_tile.tile_suit != 'z' and chow_allowed: # 'z' suit not allow to 'chow'

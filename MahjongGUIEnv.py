@@ -98,7 +98,9 @@ class MahjongGUIEnv:
         
         # Shift players play order
         self.players.append(self.players[0])
-        self.players.pop()
+        self.players.pop(0)
+        for idx, player in enumerate(self.players):
+            player.set_position(idx)
 
     def receive_input(self, input_data: pygame.event.Event):
         self.event_buffer = input_data
@@ -511,12 +513,12 @@ class MahjongGUIEnv:
         if self.game_state == 'ending_round':
             print("Round ended.")
             self.end_round = True
-            if self.round >= 3:
+            self.game_state = 'initializing_round'
+            if self.round == 3:
                 self.game_state = 'ending_wind'
                 self.wind = (self.wind + 1) % 4
             else:
                 self.round += 1
-                self.wind = (self.wind + 1) % 4
                 self.game_state = None
 
         if self.game_state == 'ending_wind':
@@ -525,6 +527,7 @@ class MahjongGUIEnv:
             self.wind += 1
             self.wind %= 4
             self.round = 0
+            self.game_state = 'initializing_round'
             if self.wind == 0:
                 self.game_state = 'ending_game'
             else:
@@ -541,7 +544,10 @@ class MahjongGUIEnv:
     def start_game(self):
         if len(self.players) != 4:
             raise ValueError
-        
+        random.shuffle(self.players)
+        for idx, player in enumerate(self.players):
+            player.set_position(idx)
+
         self.round = 0
         self.wind = 0
         self.current_player = 0
@@ -560,12 +566,20 @@ class MahjongGUIEnv:
         }
 
         # Display player scores on the top-right corner
+        position_names = ['East', 'South', 'West', 'North']
         for idx, player in enumerate(self.players):
-            score_text = f"{self.players[idx].id} Score: {player.score}"
+            player_text = f"{self.players[idx].id} Score: {player.score}, {position_names[player.round_position]}"
             font = pygame.font.Font(None, 36)
-            text_surface = font.render(score_text, True, (255, 255, 255))
+            text_surface = font.render(player_text, True, (255, 255, 255))
             text_rect = text_surface.get_rect(topright=(1800, 50 + idx * 40))
             self.screen_items['player_scores'].append((text_surface, text_rect))
+
+        # Display wind and round information below the scores
+        wind_round_text = f"Wind: {['East', 'South', 'West', 'North'][self.wind]}  Round: {self.round + 1}"
+        font = pygame.font.Font(None, 36)
+        text_surface = font.render(wind_round_text, True, (255, 255, 255))
+        text_rect = text_surface.get_rect(topright=(1800, 50 + len(self.players) * 40 + 20))
+        self.screen_items['player_scores'].append((text_surface, text_rect))
 
         for idx, player in enumerate(self.players):
             player.align_called_tuple_sprites()

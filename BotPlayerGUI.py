@@ -35,7 +35,12 @@ class BotPlayerGUI(PlayerGUI):
         self.update_board_state()
         idx = self.policy.decide_discard()
         print(f"Bot Player {self.id} discards tile {self.hand[idx].classId}")
-        return self.hand.pop(idx)
+        discard_tile = self.hand.pop(idx)
+        self.faan_calculator.self_drawn_flag = False
+        self.faan_calculator.consecutive_kong_count = 0
+        self.faan_calculator.robbing_additional_kong_flag = False
+        self.faan_calculator.self_drawn_on_last_tile_flag = False
+        return discard_tile
 
     def decide_call_action(self, call_tile: MahjongTiles.MahjongTiles, possible_actions: list):
         if not possible_actions:

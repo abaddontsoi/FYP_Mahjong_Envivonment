@@ -39,7 +39,6 @@ class MahjongGUI:
             # BotPlayerGUI('Bot4'),
             PlayerGUI('You')
         ]) 
-        random.shuffle(self.game_env.players)
         # Assign game environment to players
         for player in self.game_env.players:
             player.assign_env(self.game_env)
@@ -71,10 +70,6 @@ class MahjongGUI:
             json.dump(log, f, indent=4)
 
         pygame.quit()
-
-    # Event handler
-    def handle_events(self):
-        ...
 
     def render(self):
         self.screen.fill(GREEN)  # Green background for the board
