@@ -289,11 +289,11 @@ class MahjongGUIEnv:
                 print(f"Player {self.players[action_player].id} discarded a tile.")
                 self.game_state = 'pooling_for_action'
                 self.log.append({
-                    'player_id': current_player.id,
+                    'player_id': self.players[action_player].id,
                     'current_wind': self.wind,
-                    'round_position': current_player.round_position,
-                    'hand': [tile.classId for tile in hand_before_discard],
-                    'called_tuples': [[tile.classId for tile in tup] for tup in current_player.called_tuples],
+                    'round_position': self.players[action_player].round_position,
+                    'hand': hand_before_discard,
+                    'called_tuples': [[tile.classId for tile in tup] for tup in self.players[action_player].called_tuples],
                     'action': 'discard',
                     'action_tile': self.discard_buffer.classId,
                     'discard_pool': [tile.classId for tile in self.discard_pool],
@@ -321,7 +321,7 @@ class MahjongGUIEnv:
                             'player_id': current_player.id,
                             'current_wind': self.wind,
                             'round_position': current_player.round_position,
-                            'hand': [tile.classId for tile in hand_before_discard],
+                            'hand': hand_before_discard,
                             'called_tuples': [[tile.classId for tile in tup] for tup in current_player.called_tuples],
                             'action': 'discard',
                             'action_tile': self.discard_buffer.classId,
