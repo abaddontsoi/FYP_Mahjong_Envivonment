@@ -224,15 +224,15 @@ class MahjongGUIEnv:
                                 'action': 'self_drawn',
                                 'action_tile': None,
                                 'discard_pool': [tile.classId for tile in self.discard_pool],
-                                'opposite_players_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 2) %4].called_tuples],
+                                'opposite_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 2) %4].called_tuples],
                                 'next_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 1) %4].called_tuples],
                                 'previous_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player - 1) %4].called_tuples]
                             })
                             break
                         elif chosen_action == 'additional_kong':
                             current_player.additional_kong()
-                            # Handles robbing kong
-
+                            call_tuples_before = current_player.called_tuples.copy()
+                            hand_before_discard = current_player.hand.copy()
                             # Draw 1 tile
                             current_player.draw_tiles([self.deck.pop(0)])
                             self.current_player_on_draw_actions = []
@@ -241,12 +241,12 @@ class MahjongGUIEnv:
                                 'player_id': current_player.id,
                                 'current_wind': self.wind,
                                 'round_position': current_player.round_position,
-                                'hand': [tile.classId for tile in current_player.hand],
-                                'called_tuples': [[tile.classId for tile in tup] for tup in current_player.called_tuples],
+                                'hand': [tile.classId for tile in hand_before_discard],
+                                'called_tuples': [[tile.classId for tile in tup] for tup in call_tuples_before],
                                 'action': 'additional_kong',
                                 'action_tile': None,
                                 'discard_pool': [tile.classId for tile in self.discard_pool],
-                                'opposite_players_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 2) %4].called_tuples],
+                                'opposite_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 2) %4].called_tuples],
                                 'next_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 1) %4].called_tuples],
                                 'previous_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player - 1) %4].called_tuples]
                             })
@@ -265,11 +265,25 @@ class MahjongGUIEnv:
                                 'action': 'hidden_kong',
                                 'action_tile': None,
                                 'discard_pool': [tile.classId for tile in self.discard_pool],
-                                'opposite_players_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 2) %4].called_tuples],
+                                'opposite_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 2) %4].called_tuples],
                                 'next_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 1) %4].called_tuples],
                                 'previous_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player - 1) %4].called_tuples]
                             })
                         elif chosen_action == 'pass':
+                            call_tuples_before = current_player.called_tuples.copy()
+                            self.log.append({
+                                'player_id': current_player.id,
+                                'current_wind': self.wind,
+                                'round_position': current_player.round_position,
+                                'hand': [tile.classId for tile in current_player.hand],
+                                'called_tuples': [[tile.classId for tile in tup] for tup in call_tuples_before],
+                                'action': 'pass',
+                                'action_tile': None,
+                                'discard_pool': [tile.classId for tile in self.discard_pool],
+                                'opposite_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 2) %4].called_tuples],
+                                'next_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 1) %4].called_tuples],
+                                'previous_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player - 1) %4].called_tuples]
+                            })
                             self.current_player_on_draw_actions = []
                             self.game_state = 'waiting_discard'
                         
@@ -285,6 +299,7 @@ class MahjongGUIEnv:
             action_player = self.current_player
             if type(self.players[action_player]) == BotPlayerGUI:
                 hand_before_discard = [tile.classId for tile in self.players[action_player].hand]
+                call_tuples_before = self.players[action_player].called_tuples.copy()
                 self.discard_buffer = self.players[action_player].discard()
                 print(f"Player {self.players[action_player].id} discarded a tile.")
                 self.game_state = 'pooling_for_action'
@@ -293,11 +308,11 @@ class MahjongGUIEnv:
                     'current_wind': self.wind,
                     'round_position': self.players[action_player].round_position,
                     'hand': hand_before_discard,
-                    'called_tuples': [[tile.classId for tile in tup] for tup in self.players[action_player].called_tuples],
+                    'called_tuples': [[tile.classId for tile in tup] for tup in call_tuples_before],
                     'action': 'discard',
                     'action_tile': self.discard_buffer.classId,
                     'discard_pool': [tile.classId for tile in self.discard_pool],
-                    'opposite_players_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 2) %4].called_tuples],
+                    'opposite_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 2) %4].called_tuples],
                     'next_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 1) %4].called_tuples],
                     'previous_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player - 1) %4].called_tuples]
                 })
@@ -309,6 +324,7 @@ class MahjongGUIEnv:
                 print(f"Bot {self.players[action_player].id}'s view: {other_players_call_tuples}")
             elif self.event_buffer is not None and self.event_buffer.type == pygame.MOUSEBUTTONDOWN:
                 hand_before_discard = [tile.classId for tile in self.players[action_player].hand]
+                call_tuples_before = self.players[action_player].called_tuples.copy()
                 mouse_pos = self.event_buffer.pos
                 current_player = self.players[action_player]
                 for tile in current_player.hand:
@@ -322,11 +338,11 @@ class MahjongGUIEnv:
                             'current_wind': self.wind,
                             'round_position': current_player.round_position,
                             'hand': hand_before_discard,
-                            'called_tuples': [[tile.classId for tile in tup] for tup in current_player.called_tuples],
+                            'called_tuples': [[tile.classId for tile in tup] for tup in call_tuples_before],
                             'action': 'discard',
                             'action_tile': self.discard_buffer.classId,
                             'discard_pool': [tile.classId for tile in self.discard_pool],
-                            'opposite_players_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 2) %4].called_tuples],
+                            'opposite_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 2) %4].called_tuples],
                             'next_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 1) %4].called_tuples],
                             'previous_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player - 1) %4].called_tuples]
                         })
@@ -420,6 +436,8 @@ class MahjongGUIEnv:
                             if self.event_buffer is not None and self.discard_buffer and self.event_buffer.type == pygame.MOUSEBUTTONDOWN:
                                 mouse_pos = self.event_buffer.pos
                                 chosen_action = None
+                                hand_before_discard = [tile.classId for tile in self.players[action_player].hand]
+                                call_tuples_before = self.players[action_player].called_tuples.copy()
                                 for btn_idx, action in enumerate(possible_actions):
                                     if action.rect.collidepoint(mouse_pos):
                                         chosen_action = action.action
@@ -447,6 +465,19 @@ class MahjongGUIEnv:
                                                 self.call_queue['chow'].append((action_player, self.current_player_chow_options[0]))
                                                 self.call_actions[i - 1] = []
                                         elif chosen_action == 'pass' or chosen_action is None:
+                                            self.log.append({
+                                                'player_id': self.players[action_player].id,
+                                                'current_wind': self.wind,
+                                                'round_position': self.players[action_player].round_position,
+                                                'hand': hand_before_discard,
+                                                'called_tuples': [[tile.classId for tile in tup] for tup in call_tuples_before],
+                                                'action': 'pass',
+                                                'action_tile': self.discard_buffer.classId,
+                                                'discard_pool': [tile.classId for tile in self.discard_pool],
+                                                'opposite_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 2) %4].called_tuples],
+                                                'next_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 1) %4].called_tuples],
+                                                'previous_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player - 1) %4].called_tuples]
+                                            })
                                             self.call_actions[i - 1] = []
 
         if self.game_state == 'player_choose_chow_tiles':
@@ -487,11 +518,11 @@ class MahjongGUIEnv:
                     'current_wind': self.wind,
                     'round_position': self.players[action_player].round_position,
                     'hand': [tile.classId for tile in hand_before_discard],
-                    'called_tuples': [[tile.classId for tile in tup] for tup in self.players[action_player].called_tuples],
+                    'called_tuples': [[tile.classId for tile in tup] for tup in call_tuples_before],
                     'action': 'win',
                     'action_tile': self.discard_buffer.classId,
                     'discard_pool': [tile.classId for tile in self.discard_pool],
-                    'opposite_players_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 2) %4].called_tuples],
+                    'opposite_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 2) %4].called_tuples],
                     'next_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 1) %4].called_tuples],
                     'previous_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player - 1) %4].called_tuples]
                 })
@@ -511,11 +542,11 @@ class MahjongGUIEnv:
                     'current_wind': self.wind,
                     'round_position': self.players[action_player].round_position,
                     'hand': [tile.classId for tile in hand_before_discard],
-                    'called_tuples': [[tile.classId for tile in tup] for tup in self.players[action_player].called_tuples],
+                    'called_tuples': [[tile.classId for tile in tup] for tup in call_tuples_before],
                     'action': 'kong',
                     'action_tile': self.discard_buffer.classId,
                     'discard_pool': [tile.classId for tile in self.discard_pool],
-                    'opposite_players_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 2) %4].called_tuples],
+                    'opposite_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 2) %4].called_tuples],
                     'next_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 1) %4].called_tuples],
                     'previous_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player - 1) %4].called_tuples]
                 })
@@ -534,11 +565,11 @@ class MahjongGUIEnv:
                     'current_wind': self.wind,
                     'round_position': self.players[action_player].round_position,
                     'hand': [tile.classId for tile in hand_before_discard],
-                    'called_tuples': [[tile.classId for tile in tup] for tup in self.players[action_player].called_tuples],
+                    'called_tuples': [[tile.classId for tile in tup] for tup in call_tuples_before],
                     'action': 'pong',
                     'action_tile': self.discard_buffer.classId,
                     'discard_pool': [tile.classId for tile in self.discard_pool],
-                    'opposite_players_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 2) %4].called_tuples],
+                    'opposite_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 2) %4].called_tuples],
                     'next_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 1) %4].called_tuples],
                     'previous_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player - 1) %4].called_tuples]
                 })
@@ -565,7 +596,7 @@ class MahjongGUIEnv:
                     'action': 'chow',
                     'action_tile': self.discard_buffer.classId,
                     'discard_pool': [tile.classId for tile in self.discard_pool],
-                    'opposite_players_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 2) %4].called_tuples],
+                    'opposite_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 2) %4].called_tuples],
                     'next_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 1) %4].called_tuples],
                     'previous_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player - 1) %4].called_tuples]
                 })
