@@ -1,0 +1,18 @@
+# Input Features
+- Wind $\in \{ 0, 1, 2, 3 \}$
+- Round Position $\in \{ 0, 1, 2, 3 \}$
+- Hand $\in \{ 0, 1, 2, 3, 4 \} ^ {34}$
+- Self Pongs $\in \{ 0, 1 \} ^ {34}$
+- Self Kongs $\in \{ 0, 1 \} ^ {34}$
+- Self Chows $\in \{ 0, 1, 2, 3, 4 \} ^ {21}$
+- Op Pongs $\in \{ 0, 1 \} ^ {34}$
+- Op Kongs $\in \{ 0, 1 \} ^ {34}$
+- Op Chows $\in \{ 0, 1, 2, 3, 4 \} ^ {21}$
+- Next Pongs $\in \{ 0, 1 \} ^ {34}$
+- Next Kongs $\in \{ 0, 1 \} ^ {34}$
+- Next Chows $\in \{ 0, 1, 2, 3, 4 \} ^ {21}$
+- Prev Pongs $\in \{ 0, 1 \} ^ {34}$
+- Prev Kongs $\in \{ 0, 1 \} ^ {34}$
+- Prev Chows $\in \{ 0, 1, 2, 3, 4 \} ^ {21}$
+- Action tile $\in \{ 1, ..., 34 \}^{34}$
+- Discard Pool $\in \{ 0, 1, 2, 3, 4 \} ^ {34}$

@@ -1,5 +1,5 @@
 import pygame
-import random
+import os
 from PlayerGUI import PlayerGUI
 from BotPlayerGUI import BotPlayerGUI
 import MahjongGUIEnv
@@ -65,7 +65,8 @@ class MahjongGUI:
                     self.render()
                     self.clock.tick(120)
         log = self.game_env.log
-        with open(f'game_log_{datetime.datetime.now()}.json', 'w') as f:
+        os.makedirs('raw_logs', exist_ok=True)
+        with open(f'raw_logs/game_log_{datetime.datetime.now()}.json', 'w') as f:
             import json
             json.dump(log, f, indent=4)
 
