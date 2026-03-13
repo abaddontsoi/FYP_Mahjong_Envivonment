@@ -3,3 +3,4 @@ __pycache__/
 .coverage
 game_log_*
 *_logs/
+models/

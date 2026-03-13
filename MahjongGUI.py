@@ -1,7 +1,9 @@
 import pygame
 import os
+from ModelPolicy import ModelPolicy
 from PlayerGUI import PlayerGUI
 from BotPlayerGUI import BotPlayerGUI
+from ModelPlayerGUI import ModelPlayerGUI
 import MahjongGUIEnv
 import datetime
 
@@ -28,17 +30,16 @@ class MahjongGUI:
 
     def run(self):
         # Add players
-        self.game_env.add_players([
-            # PlayerGUI('Alice'),
-            # PlayerGUI('Bob'),
-            # PlayerGUI('Charlie'),
-            # PlayerGUI('Diana'),
+        players = [
             BotPlayerGUI('Bot1'),
             BotPlayerGUI('Bot2'),
             BotPlayerGUI('Bot3'),
-            # BotPlayerGUI('Bot4'),
-            PlayerGUI('You')
-        ]) 
+            BotPlayerGUI('Bot4'),
+            # PlayerGUI('You')
+        ]
+        if players[-1].__class__ is BotPlayerGUI:
+            players[-1].assign_policy(ModelPolicy())
+        self.game_env.add_players(players) 
         # Assign game environment to players
         for player in self.game_env.players:
             player.assign_env(self.game_env)

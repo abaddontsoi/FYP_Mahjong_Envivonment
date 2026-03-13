@@ -42,6 +42,9 @@ class BotPlayerGUI(PlayerGUI):
         self.faan_calculator.self_drawn_on_last_tile_flag = False
         return discard_tile
 
+    def assign_policy(self, policy: Policy):
+        self.policy = policy
+
     def decide_call_action(self, call_tile: MahjongTiles.MahjongTiles, possible_actions: list):
         if not possible_actions:
             return None
