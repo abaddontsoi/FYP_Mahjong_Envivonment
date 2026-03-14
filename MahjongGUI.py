@@ -5,7 +5,8 @@ from PlayerGUI import PlayerGUI
 from BotPlayerGUI import BotPlayerGUI
 from ModelPlayerGUI import ModelPlayerGUI
 import MahjongGUIEnv
-import datetime
+import time
+import os
 
 # Color constants
 WHITE = (255, 255, 255)
@@ -67,7 +68,7 @@ class MahjongGUI:
                     self.clock.tick(120)
         log = self.game_env.log
         os.makedirs('raw_logs', exist_ok=True)
-        with open(f'raw_logs/game_log_{datetime.datetime.now()}.json', 'w') as f:
+        with open(os.path.join('raw_logs/', f'game_log_{int(time.time())}.json') , 'w') as f:
             import json
             json.dump(log, f, indent=4)
 
