@@ -3,6 +3,7 @@ from MahjongTiles import MahjongTiles
 import torch
 import torch.nn as nn
 import os 
+from Encoder import encoder
 
 class ChowMLP(nn.Module):
     def __init__(self, input_dim):
@@ -87,14 +88,24 @@ class ModelPolicy(Policy):
     def load_models(self):
         MODEL_ROOT = "models"
         if os.path.exists(os.path.join(MODEL_ROOT, "discard_model.pth")):
-            ...
+            self.discard_model = DiscardMLP(input_dim=460)  # Adjust input_dim as needed
+            self.discard_model.load_state_dict(torch.load(os.path.join(MODEL_ROOT, "discard_model.pth"), weights_only=True))
+            self.discard_model.eval()
+        
         if os.path.exists(os.path.join(MODEL_ROOT, "pong_model.pth")):
-            ...
+            self.pong_model = PongMLP(input_dim=460)  # Adjust input_dim as needed
+            self.pong_model.load_state_dict(torch.load(os.path.join(MODEL_ROOT, "pong_model.pth"), weights_only=True))
+            self.pong_model.eval()
+        
         if os.path.exists(os.path.join(MODEL_ROOT, "kong_model.pth")):
-            ...
+            self.kong_model = KongMLP(input_dim=460)
+            self.kong_model.load_state_dict(torch.load(os.path.join(MODEL_ROOT, 'kong_model.pth'), weights_only=True))
+            self.kong_model.eval()
+        
         if os.path.exists(os.path.join(MODEL_ROOT, "chow_model.pth")):
-            ...
-
+            self.chow_model = ChowMLP(input_dim=460)
+            self.chow_model.load_state_dict(torch.load(os.path.join(MODEL_ROOT, 'chow_model.pth'), weights_only=True))
+            self.chow_model.eval()
 
     def decide_discard(self):
         if not self.discard_model:
