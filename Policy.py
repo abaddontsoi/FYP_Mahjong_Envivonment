@@ -285,13 +285,15 @@ class Policy:
         if dominating_suit != call_tile_suit:
             return False, None
         
-        # If chow is not the same suit as the most recent call tuple, hard to achieve clean hand or other high faan combinations, hence should not chow
-        last_call_tuple = self.self_call_tuples[-1] if self.self_call_tuples else None
-        if last_call_tuple:
-            last_call_suit = last_call_tuple[0].tile_suit
-            if call_tile_suit != last_call_suit:
-                return False, None
-
+        # If chow is not the same suit as the selected suit, hard to achieve clean hand or other high faan combinations, hence should not chow
+        selected_suit = None
+        for calls in self.self_call_tuples:
+            if calls[0].tile_suit in ['m', 'p', 's']:
+                selected_suit = calls[0].tile_suit
+                break
+        if selected_suit and call_tile_suit != selected_suit:
+            return False, None
+        
         return self.decide_chow_helper(call_tile_suit, call_tile_number)
     
     def decide_win(self, call_tile: MahjongTiles) -> bool:
