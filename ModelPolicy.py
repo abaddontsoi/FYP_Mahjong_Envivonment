@@ -147,8 +147,8 @@ class ModelPolicy(Policy):
                 for idx, tile in enumerate(self.hand):
                     if tile.classId in top_5:
                         return idx  # Return the index of the tile to discard
-                # Fallback case
-                return super().decide_discard()
+        # Fallback case
+        return super().decide_discard()
         
     def decide_kong(self, call_tile: MahjongTiles) -> bool:
         # Basic rule-based checks before invoking the model

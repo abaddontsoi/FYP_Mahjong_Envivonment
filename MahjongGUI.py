@@ -35,11 +35,10 @@ class MahjongGUI:
             BotPlayerGUI('Bot1'),
             BotPlayerGUI('Bot2'),
             BotPlayerGUI('Bot3'),
-            BotPlayerGUI('Bot4'),
+            BotPlayerGUI('ModelBot'),
             # PlayerGUI('You')
         ]
-        for p in players:
-            p.assign_policy(ModelPolicy())  # Assign model-based policy to each bot player
+        players[-1].assign_policy(ModelPolicy())  # Assign model-based policy to each bot player
         
         self.game_env.add_players(players) 
         # Assign game environment to players
@@ -66,7 +65,7 @@ class MahjongGUI:
                     
                     self.game_env.update_game_state()
                     self.render()
-                    self.clock.tick(120)
+                    self.clock.tick(10)
         log = self.game_env.log
         os.makedirs('raw_logs', exist_ok=True)
         import json

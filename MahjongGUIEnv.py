@@ -730,6 +730,7 @@ class MahjongGUIEnv:
         text_rect = text_surface.get_rect(topright=(1800, 50 + len(self.players) * 40 + 20))
         self.screen_items['player_scores'].append((text_surface, text_rect))
 
+        # Display each player's hand and called tuples
         for idx, player in enumerate(self.players):
             player.align_called_tuple_sprites()
             for tuple in player.called_tuples:
@@ -737,8 +738,8 @@ class MahjongGUIEnv:
                     tile.rect.topleft = (tile.rect.topleft[0], 1000 - idx * (tile.rect.height + 20))
             self.screen_items['players_called_tuples'].append(player.called_tuples)
             
-            if player.__class__ is BotPlayerGUI:
-                continue
+            # if player.__class__ is BotPlayerGUI:
+            #     continue
             player.align_tile_sprites()
             for tile in player.hand:
                 tile.rect.topleft = (tile.rect.topleft[0], 1000 - idx * (tile.rect.height + 20))
