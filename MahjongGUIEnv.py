@@ -64,6 +64,16 @@ class MahjongGUIEnv:
         # Logging related
         self.log = []
 
+        # Winning log format:
+        # player.id
+        # current wind
+        # round position
+        # hand (list of tile classId)
+        # called tuples (list of list of tile classId)
+        # winning faan + score
+        # win from/self drawn
+        self.winning_log = []
+
     def assign_game_loop(self, game_loop):
         self.game_loop = game_loop
 
@@ -159,6 +169,7 @@ class MahjongGUIEnv:
         if self.game_state == 'player_take_on_draw_action':
             # Create action buttons for the player
             action_player = self.current_player
+            current_player = self.players[action_player]
             if self.players[action_player].__class__ is BotPlayerGUI:
                 chosen_action = None                
                 # Handle action
@@ -173,6 +184,16 @@ class MahjongGUIEnv:
                     for player in self.players:
                         if player != current_player:
                             player.score -= each_player_lose
+                    self.winning_log.append({
+                        'player_id': current_player.id,
+                        'current_wind': self.wind,
+                        'round_position': current_player.round_position,
+                        'hand': [tile.classId for tile in current_player.hand],
+                        'called_tuples': [[tile.classId for tile in tup] for tup in current_player.called_tuples],
+                        'winning_faan': winning_faan,
+                        'score': score,
+                        'win_from': None,
+                    })
                     self.game_state = 'ending_round'
                 elif chosen_action == 'additional_kong':
                     self.players[action_player].additional_kong()
@@ -227,6 +248,16 @@ class MahjongGUIEnv:
                                 'opposite_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 2) %4].called_tuples],
                                 'next_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 1) %4].called_tuples],
                                 'previous_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player - 1) %4].called_tuples]
+                            })
+                            self.winning_log.append({
+                                'player_id': current_player.id,
+                                'current_wind': self.wind,
+                                'round_position': current_player.round_position,
+                                'hand': [tile.classId for tile in current_player.hand],
+                                'called_tuples': [[tile.classId for tile in tup] for tup in current_player.called_tuples],
+                                'winning_faan': winning_faan,
+                                'score': score,
+                                'win_from': None,
                             })
                             break
                         elif chosen_action == 'additional_kong':
@@ -400,9 +431,6 @@ class MahjongGUIEnv:
                 for i in range(1, 4):
                     action_player = (self.current_player + i) % 4
                     if self.players[action_player].__class__ is BotPlayerGUI:
-                        # print(f"Bot Player {self.players[action_player].id} turn to act.")
-                        # print(f"self.call_actions: {self.call_actions}")
-                        # print(f"Player {self.players[action_player].id} has actions: {self.call_actions[i-1]}")
                         if not self.call_actions[i-1]:
                             # No action, skip
                             continue
@@ -429,8 +457,6 @@ class MahjongGUIEnv:
                         elif chosen_action == 'pass' or chosen_action is None:
                             self.call_actions[i - 1] = []
                     else:
-                        # print(f"Player {self.players[action_player].id} turn to act.")
-                        # print(f"Player {self.players[action_player].id} has actions: {self.call_actions[i-1]}")
                         if self.screen_items['player_action_buttons']:
                             possible_actions = self.screen_items['player_action_buttons'][i-1]
                             if self.event_buffer is not None and self.discard_buffer and self.event_buffer.type == pygame.MOUSEBUTTONDOWN:
@@ -525,6 +551,16 @@ class MahjongGUIEnv:
                     'opposite_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 2) %4].called_tuples],
                     'next_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 1) %4].called_tuples],
                     'previous_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player - 1) %4].called_tuples]
+                })
+                self.winning_log.append({
+                    'player_id': self.players[action_player].id,
+                    'current_wind': self.wind,
+                    'round_position': self.players[action_player].round_position,
+                    'hand': [tile.classId for tile in hand_before_discard],
+                    'called_tuples': [[tile.classId for tile in tup] for tup in call_tuples_before],
+                    'winning_faan': winning_faan,
+                    'score': score,
+                    'win_from': self.players[self.current_player].id,
                 })
                 self.event_buffer = None
                 self.discard_buffer = None 

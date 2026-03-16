@@ -68,9 +68,12 @@ class MahjongGUI:
                     self.clock.tick(120)
         log = self.game_env.log
         os.makedirs('raw_logs', exist_ok=True)
+        import json
         with open(os.path.join('raw_logs/', f'game_log_{int(time.time())}.json') , 'w') as f:
-            import json
             json.dump(log, f, indent=4)
+        if self.game_env.winning_log:
+            with open(os.path.join('raw_logs/', f'winning_log_{int(time.time())}.json') , 'w') as f:
+                json.dump(self.game_env.winning_log, f, indent=4)
 
         pygame.quit()
 
