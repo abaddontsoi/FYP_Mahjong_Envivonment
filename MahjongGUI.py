@@ -38,8 +38,10 @@ class MahjongGUI:
             BotPlayerGUI('Bot4'),
             # PlayerGUI('You')
         ]
+        # Assign ModelPolicy to 1 bot
         if players[-1].__class__ is BotPlayerGUI:
             players[-1].assign_policy(ModelPolicy())
+        
         self.game_env.add_players(players) 
         # Assign game environment to players
         for player in self.game_env.players:
@@ -69,10 +71,11 @@ class MahjongGUI:
         log = self.game_env.log
         os.makedirs('raw_logs', exist_ok=True)
         import json
-        with open(os.path.join('raw_logs/', f'game_log_{int(time.time())}.json') , 'w') as f:
+        tstamp = int(time.time())
+        with open(os.path.join('raw_logs/', f'game_log_{tstamp}.json') , 'w') as f:
             json.dump(log, f, indent=4)
         if self.game_env.winning_log:
-            with open(os.path.join('raw_logs/', f'winning_log_{int(time.time())}.json') , 'w') as f:
+            with open(os.path.join('raw_logs/', f'winning_log_{tstamp}.json') , 'w') as f:
                 json.dump(self.game_env.winning_log, f, indent=4)
 
         pygame.quit()

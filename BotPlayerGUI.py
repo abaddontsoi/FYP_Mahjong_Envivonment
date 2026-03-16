@@ -7,7 +7,7 @@ class BotPlayerGUI(PlayerGUI):
     def __init__(self, id = None):
         super().__init__(id)
         self.policy = Policy()
-
+    
     def view_other_players_call_tuples(self):
         if self.game_env is None or self.round_position == -1:
             return []
@@ -18,6 +18,8 @@ class BotPlayerGUI(PlayerGUI):
         return other_player_call_tuples
 
     def update_board_state(self):
+        self.policy.round_position = self.round_position
+        self.policy.round_wind = self.game_env.wind
         if any([
             self.game_env is None,
             self.round_position == -1,
