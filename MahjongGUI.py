@@ -38,9 +38,8 @@ class MahjongGUI:
             BotPlayerGUI('Bot4'),
             # PlayerGUI('You')
         ]
-        # Assign ModelPolicy to 1 bot
-        if players[-1].__class__ is BotPlayerGUI:
-            players[-1].assign_policy(ModelPolicy())
+        for p in players:
+            p.assign_policy(ModelPolicy())  # Assign model-based policy to each bot player
         
         self.game_env.add_players(players) 
         # Assign game environment to players

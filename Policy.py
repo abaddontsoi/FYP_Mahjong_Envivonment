@@ -174,10 +174,20 @@ class Policy:
     # When the following decision functions are called, that means the player is available to call for actions
 
     def decide_kong(self, call_tile: MahjongTiles) -> bool:
-
-        return False
+        # Find the first chow
+        for call in self.self_call_tuples:
+            if check_tuple_type(call) == 'chow' and call[0].tile_suit != call_tile.tile_suit and call_tile.tile_suit != 'z':
+                if call_tile.tile_suit != call[0].tile_suit:
+                    return False
+        return True
     
     def decide_pong(self, call_tile: MahjongTiles) -> bool:
+        # Find the first chow
+        for call in self.self_call_tuples:
+            if check_tuple_type(call) == 'chow' and call[0].tile_suit != call_tile.tile_suit and call_tile.tile_suit != 'z':
+                if call_tile.tile_suit != call[0].tile_suit:
+                    return False
+
         suits = ['m', 'p', 's', 'z']
         call_tile_suit = call_tile.tile_suit
         call_tile_number = call_tile.tile_number
@@ -286,13 +296,9 @@ class Policy:
             return False, None
         
         # If chow is not the same suit as the selected suit, hard to achieve clean hand or other high faan combinations, hence should not chow
-        selected_suit = None
         for calls in self.self_call_tuples:
-            if calls[0].tile_suit in ['m', 'p', 's']:
-                selected_suit = calls[0].tile_suit
-                break
-        if selected_suit and call_tile_suit != selected_suit:
-            return False, None
+            if calls[0].tile_suit != 'z' and calls[0].tile_suit != call_tile_suit:
+                return False, None
         
         return self.decide_chow_helper(call_tile_suit, call_tile_number)
     

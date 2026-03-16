@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 import os 
 from Encoder import encoder
+from FaanCalculator import check_tuple_type
 
 class ChowMLP(nn.Module):
     def __init__(self, input_dim):
@@ -150,6 +151,13 @@ class ModelPolicy(Policy):
                 return super().decide_discard()
         
     def decide_kong(self, call_tile: MahjongTiles) -> bool:
+        # Basic rule-based checks before invoking the model
+        # Find the first chow
+        for call in self.self_call_tuples:
+            if check_tuple_type(call) == 'chow' and call[0].tile_suit != call_tile.tile_suit and call_tile.tile_suit != 'z':
+                if call_tile.tile_suit != call[0].tile_suit:
+                    return False
+        
         if not self.kong_model:
             print("Kong model not found, using default policy.")
             return super().decide_kong(call_tile)
@@ -164,6 +172,21 @@ class ModelPolicy(Policy):
                 return logit.item() > 0.5  # Thresholding at 0.5 
 
     def decide_chow(self, call_tile: MahjongTiles) -> bool:
+        # Basic rule-based checks before invoking the model
+        dominating_suit = self.get_dominating_suit()
+        call_tile_suit = call_tile.tile_suit
+        if call_tile_suit == 'z': # Cannot chow dragon tiles
+            return False, None
+
+        # If chow on a non dominating suit, then the hand is hard to achieve clean_hand
+        if dominating_suit != call_tile_suit:
+            return False, None
+        
+        # If chow is not the same suit as the selected suit, hard to achieve clean hand or other high faan combinations, hence should not chow
+        for calls in self.self_call_tuples:
+            if calls[0].tile_suit != 'z' and calls[0].tile_suit != call_tile_suit:
+                return False, None
+        
         if not self.chow_model:
             print("Chow model not found, using default policy.")
             return super().decide_chow(call_tile)
@@ -180,24 +203,12 @@ class ModelPolicy(Policy):
         
     def decide_pong(self, call_tile: MahjongTiles) -> bool:
         # Basic rule-based checks before invoking the model
-        dominating_suit = self.get_dominating_suit()
-        call_tile_suit = call_tile.tile_suit
-        if call_tile_suit == 'z': # Cannot chow dragon tiles
-            return False, None
-
-        # If chow on a non dominating suit, then the hand is hard to achieve clean_hand
-        if dominating_suit != call_tile_suit:
-            return False, None
-        
-        # If chow is not the same suit as the selected suit, hard to achieve clean hand or other high faan combinations, hence should not chow
-        selected_suit = None
-        for calls in self.self_call_tuples:
-            if calls[0].tile_suit in ['m', 'p', 's']:
-                selected_suit = calls[0].tile_suit
-                break
-        if selected_suit and call_tile_suit != selected_suit:
-            return False, None
-
+        # Find the first chow
+        for call in self.self_call_tuples:
+            if check_tuple_type(call) == 'chow' and call[0].tile_suit != call_tile.tile_suit and call_tile.tile_suit != 'z':
+                if call_tile.tile_suit != call[0].tile_suit:
+                    return False
+                
         if not self.pong_model:
             print("Pong model not found, using default policy.")
             return super().decide_pong(call_tile)
