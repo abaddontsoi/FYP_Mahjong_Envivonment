@@ -1,4 +1,4 @@
-import MahjongTiles
+import MahjongTile
 from FaanCalculator import FaanCalculator, check_tuple_type
 
 class PlayerGUI:
@@ -23,7 +23,7 @@ class PlayerGUI:
     def sort_hand(self):
         self.hand.sort(key=lambda x: x.classId)
 
-    def draw_tiles(self, tiles: list[MahjongTiles.MahjongTiles]):
+    def draw_tiles(self, tiles: list[MahjongTile.MahjongTile]):
         self.hand += tiles
         self.sort_hand()
         self.faan_calculator.update_hand_and_called_tuples(self.hand, self.called_tuples)
@@ -45,7 +45,7 @@ class PlayerGUI:
         print(self.get_hand_as_string())
         print(self.get_called_tuples_as_string())
 
-    def check_tuple_type(self, tuple: tuple[MahjongTiles.MahjongTiles]):
+    def check_tuple_type(self, tuple: tuple[MahjongTile.MahjongTile]):
         return check_tuple_type(tuple)
 
     def safe_get_option(self, options: list, prompt: str):
@@ -73,7 +73,7 @@ class PlayerGUI:
     def update_board_state(self):
             return 
 
-    def find_first_by_number(self, tile_number: int, suit, provided_list: list[MahjongTiles.MahjongTiles] = None):
+    def find_first_by_number(self, tile_number: int, suit, provided_list: list[MahjongTile.MahjongTile] = None):
         if not provided_list:
             for i in range(len(self.hand)):
                 if self.hand[i].tile_number == tile_number:
@@ -86,7 +86,7 @@ class PlayerGUI:
                         return i
         return -1
     
-    def find_first_by_classId(self, classId: int, provided_list: list[MahjongTiles.MahjongTiles] = None):
+    def find_first_by_classId(self, classId: int, provided_list: list[MahjongTile.MahjongTile] = None):
         if not provided_list:
             for i in range(len(self.hand)):
                 if self.hand[i].classId == classId:
@@ -106,7 +106,7 @@ class PlayerGUI:
                 unique_tiles.append(self.hand[i])
         return unique_tiles
         
-    def check_possible_calls(self, call_tile: MahjongTiles.MahjongTiles, chow_allowed = False):
+    def check_possible_calls(self, call_tile: MahjongTile.MahjongTile, chow_allowed = False):
         actions = []
         # Put those selected mahjong tiles to self.called_tuples, responses are: 
         # 'win'
@@ -170,7 +170,7 @@ class PlayerGUI:
         return actions
 
     # length must be multiple of 3, max 12
-    def count_tuples(self, remaining: list[MahjongTiles.MahjongTiles]):
+    def count_tuples(self, remaining: list[MahjongTile.MahjongTile]):
         if not remaining or (len(remaining) % 3 != 0) or len(remaining) > 12:
             return 0
             
@@ -205,7 +205,7 @@ class PlayerGUI:
             
             return 0
 
-    def check_13_orphans(self, hand: list[MahjongTiles.MahjongTiles]):
+    def check_13_orphans(self, hand: list[MahjongTile.MahjongTile]):
         required_classId = [1, 9, 10, 18, 19, 27, 28, 29, 30, 31, 32, 33, 34]
         for classId in required_classId:
             if self.find_first_by_classId(classId) == -1:
@@ -222,7 +222,7 @@ class PlayerGUI:
         else:
             return False
 
-    def check_win(self, call_tile: MahjongTiles.MahjongTiles = None):
+    def check_win(self, call_tile: MahjongTile.MahjongTile = None):
         # Insert to hand
         remaining = self.hand + []
         if call_tile:
@@ -302,7 +302,7 @@ class PlayerGUI:
             return result == 'self drawn'
         return False
             
-    def kong(self, call_tile: MahjongTiles.MahjongTiles):
+    def kong(self, call_tile: MahjongTile.MahjongTile):
         call_tile_id = call_tile.classId
         kong_tiles = [t for t in self.hand if t.classId == call_tile_id]
         self.hand = [t for t in self.hand if t.classId != call_tile_id]
@@ -321,7 +321,7 @@ class PlayerGUI:
                     self.hand.remove(tile)
                     return
 
-    def win(self, winning_tile: MahjongTiles.MahjongTiles = None):
+    def win(self, winning_tile: MahjongTile.MahjongTile = None):
         temp_hand = self.hand + []
         if winning_tile is not None:
             temp_hand.append(winning_tile)
@@ -344,7 +344,7 @@ class PlayerGUI:
                         self.hand.remove(tile)
                     break
 
-    def pong(self, call_tile: MahjongTiles.MahjongTiles):
+    def pong(self, call_tile: MahjongTile.MahjongTile):
         call_tile_id = call_tile.classId
         pong_tiles = [t for t in self.hand if t.classId == call_tile_id]
         self.hand = [t for t in self.hand if t.classId != call_tile_id]
@@ -356,7 +356,7 @@ class PlayerGUI:
         pong_tiles.append(call_tile)
         self.called_tuples.append(tuple(pong_tiles))
 
-    def chow_check(self, chow_tiles: list[MahjongTiles.MahjongTiles], call_tile: MahjongTiles.MahjongTiles):
+    def chow_check(self, chow_tiles: list[MahjongTile.MahjongTile], call_tile: MahjongTile.MahjongTile):
         temp = chow_tiles + [call_tile]
         temp.sort(key=lambda x: x.tile_number)
         if len(temp) != 3:
@@ -366,7 +366,7 @@ class PlayerGUI:
         return False
 
     # Return all possible chow options
-    def get_chow_options(self, call_tile: MahjongTiles.MahjongTiles):
+    def get_chow_options(self, call_tile: MahjongTile.MahjongTile):
         chow_options = []
         # For each 2 consecutive tiles in hand, check the tuple (t[idx - 1], t[idx]) with call_tile is a chow tuple
         if len(self.hand) < 2:
@@ -396,7 +396,7 @@ class PlayerGUI:
                     )
         return chow_options
     
-    def chow(self, call_tile: MahjongTiles.MahjongTiles, chosen_option: tuple):
+    def chow(self, call_tile: MahjongTile.MahjongTile, chosen_option: tuple):
         chow_tiles = list(chosen_option)
         self.hand = [t for t in self.hand if t not in chosen_option]
         chow_tiles.append(call_tile)

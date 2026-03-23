@@ -1,5 +1,5 @@
 from PlayerGUI import PlayerGUI
-import MahjongTiles
+import MahjongTile
 import random
 from Policy import Policy
 
@@ -47,7 +47,7 @@ class BotPlayerGUI(PlayerGUI):
     def assign_policy(self, policy: Policy):
         self.policy = policy
 
-    def decide_call_action(self, call_tile: MahjongTiles.MahjongTiles, possible_actions: list):
+    def decide_call_action(self, call_tile: MahjongTile.MahjongTile, possible_actions: list):
         if not possible_actions:
             return None
         

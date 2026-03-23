@@ -1,5 +1,5 @@
 import random
-from MahjongTiles import MahjongTiles
+from MahjongTile import MahjongTile
 from FaanCalculator import check_tuple_type
 
 class Policy:
@@ -12,10 +12,10 @@ class Policy:
         self.other_player_call_tuples = [] # Follows the order: next player, opposite player, previous player
 
     def update_board_state(self, 
-                          discard_pool: list[MahjongTiles], 
-                          hand: list[MahjongTiles], 
-                          self_call_tuples: list[tuple[MahjongTiles, ...]],
-                          other_player_call_tuples: list[list[tuple[MahjongTiles, ...]]]):
+                          discard_pool: list[MahjongTile], 
+                          hand: list[MahjongTile], 
+                          self_call_tuples: list[tuple[MahjongTile, ...]],
+                          other_player_call_tuples: list[list[tuple[MahjongTile, ...]]]):
         self.discard_pool = discard_pool
         self.hand = hand
         self.self_call_tuples = self_call_tuples
@@ -173,7 +173,7 @@ class Policy:
 
     # When the following decision functions are called, that means the player is available to call for actions
 
-    def decide_kong(self, call_tile: MahjongTiles) -> bool:
+    def decide_kong(self, call_tile: MahjongTile) -> bool:
         # Find the first chow
         for call in self.self_call_tuples:
             if check_tuple_type(call) == 'chow' and call[0].tile_suit != call_tile.tile_suit and call_tile.tile_suit != 'z':
@@ -181,7 +181,7 @@ class Policy:
                     return False
         return True
     
-    def decide_pong(self, call_tile: MahjongTiles) -> bool:
+    def decide_pong(self, call_tile: MahjongTile) -> bool:
         # Find the first chow
         for call in self.self_call_tuples:
             if check_tuple_type(call) == 'chow' and call[0].tile_suit != call_tile.tile_suit and call_tile.tile_suit != 'z':
@@ -277,7 +277,7 @@ class Policy:
         
         return should_chow
 
-    def decide_chow(self, call_tile: MahjongTiles) -> bool:
+    def decide_chow(self, call_tile: MahjongTile) -> bool:
         suits = ['m', 'p', 's', 'z']
         existing, hand_existing, dominating_suit, pair_count, consec_2_count, alternating_consec_2_count, pong_kong_count = self.extract_features()
         
@@ -302,5 +302,5 @@ class Policy:
         
         return self.decide_chow_helper(call_tile_suit, call_tile_number)
     
-    def decide_win(self, call_tile: MahjongTiles) -> bool:
+    def decide_win(self, call_tile: MahjongTile) -> bool:
         return True

@@ -1,5 +1,5 @@
 import random
-import MahjongTiles
+import MahjongTile
 from PlayerGUI import PlayerGUI
 from BotPlayerGUI import BotPlayerGUI
 import pygame
@@ -81,9 +81,9 @@ class MahjongGUIEnv:
         # Clear deck
         self.deck = []
         # Create tiles
-        for key, value in MahjongTiles.tile_classes.items():
+        for key, value in MahjongTile.tile_classes.items():
             for _ in range(4):
-                self.deck.append(MahjongTiles.MahjongTiles(key))
+                self.deck.append(MahjongTile.MahjongTile(key))
         # for i in range(1, 35):
         #     self.deck.append(MahjongTiles.MahjongTiles(i))
 

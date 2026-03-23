@@ -1,7 +1,7 @@
 from pyexpat import features
 
 from Policy import Policy
-from MahjongTiles import MahjongTiles
+from MahjongTile import MahjongTile
 import torch
 import torch.nn as nn
 import os 
@@ -150,7 +150,7 @@ class ModelPolicy(Policy):
         # Fallback case
         return super().decide_discard()
         
-    def decide_kong(self, call_tile: MahjongTiles) -> bool:
+    def decide_kong(self, call_tile: MahjongTile) -> bool:
         # Basic rule-based checks before invoking the model
         # Find the first chow
         for call in self.self_call_tuples:
@@ -171,7 +171,7 @@ class ModelPolicy(Policy):
                 logit = self.kong_model(features_tensor)
                 return logit.item() > 0.5  # Thresholding at 0.5 
 
-    def decide_chow(self, call_tile: MahjongTiles) -> bool:
+    def decide_chow(self, call_tile: MahjongTile) -> bool:
         # Basic rule-based checks before invoking the model
         dominating_suit = self.get_dominating_suit()
         call_tile_suit = call_tile.tile_suit
@@ -201,7 +201,7 @@ class ModelPolicy(Policy):
                 return logit.item() > 0.5, None
 
         
-    def decide_pong(self, call_tile: MahjongTiles) -> bool:
+    def decide_pong(self, call_tile: MahjongTile) -> bool:
         # Basic rule-based checks before invoking the model
         # Find the first chow
         for call in self.self_call_tuples:

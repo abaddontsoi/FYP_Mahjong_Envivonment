@@ -1,5 +1,5 @@
 from BotPlayerGUI import BotPlayerGUI
-from MahjongTiles import MahjongTiles
+from MahjongTile import MahjongTile
 from ModelPolicy import ModelPolicy
 
 class ModelPlayerGUI(BotPlayerGUI):

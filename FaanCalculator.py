@@ -1,4 +1,4 @@
-from MahjongTiles import MahjongTiles
+from MahjongTile import MahjongTile
 
 def faan_to_score(faan_count: int, self_drawn: bool):
     # Set to maximum 10 faan
@@ -16,7 +16,7 @@ def faan_to_score(faan_count: int, self_drawn: bool):
     
     return score_table[faan_count - 1][0]
 
-def check_tuple_type(tuple: tuple[MahjongTiles]):
+def check_tuple_type(tuple: tuple[MahjongTile]):
     # Convert to list and sort
     call_tuple = sorted(list(tuple), key=lambda x: x.classId)
     if len(call_tuple) == 4:
@@ -77,7 +77,7 @@ class FaanCalculator:
         self.hand = hand
         self.called_tuples = called_tuples
     
-    def find_first_by_classId(self, classId: int, provided_list: list[MahjongTiles] = None):
+    def find_first_by_classId(self, classId: int, provided_list: list[MahjongTile] = None):
         if not provided_list:
             for i in range(len(self.hand)):
                 if self.hand[i].classId == classId:
@@ -89,7 +89,7 @@ class FaanCalculator:
         return -1
 
     # length must be multiple of 3, max 12
-    def count_tuples(self, remaining: list[MahjongTiles]):
+    def count_tuples(self, remaining: list[MahjongTile]):
         if not remaining or (len(remaining) % 3 != 0) or len(remaining) > 12:
             return 0
             

@@ -7,7 +7,7 @@ from unittest.mock import patch, MagicMock, Mock
 import sys
 sys.path.insert(0, '.')
 from PlayerGUI import PlayerGUI
-from MahjongTiles import MahjongTiles
+from MahjongTile import MahjongTile
 
 class TestPlayer(unittest.TestCase):
     
@@ -22,17 +22,17 @@ class TestPlayer(unittest.TestCase):
 
     def test_check_possible_call(self):
         self.player.hand = [
-            MahjongTiles(1), 
-            MahjongTiles(1),
-            MahjongTiles(1),
-            MahjongTiles(2),
-            MahjongTiles(2),
+            MahjongTile(1), 
+            MahjongTile(1),
+            MahjongTile(1),
+            MahjongTile(2),
+            MahjongTile(2),
         ]
         self.player.called_tuples = [
 
         ]
-        self.env.deck = [MahjongTiles(1), MahjongTiles(2), MahjongTiles(3)]
-        call_tile = MahjongTiles(1)
+        self.env.deck = [MahjongTile(1), MahjongTile(2), MahjongTile(3)]
+        call_tile = MahjongTile(1)
         possible_actions = self.player.check_possible_calls(call_tile)
         self.assertIn('pong', possible_actions)
         self.assertNotIn('chow', possible_actions)

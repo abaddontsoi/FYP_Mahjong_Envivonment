@@ -5,15 +5,15 @@ import random
 from Policy import Policy
 
 sys.path.insert(0, '.')
-from MahjongTiles import MahjongTiles
+from MahjongTile import MahjongTile
 
 class TestPolicy(unittest.TestCase):
     def setUp(self):
         self.policy = Policy()
-        self.discard_pool = [MahjongTiles(1), MahjongTiles(10), MahjongTiles(19)]
-        self.hand = [MahjongTiles(i) for i in range(1, 10)] + [MahjongTiles(i) for i in range(28, 32)]
+        self.discard_pool = [MahjongTile(1), MahjongTile(10), MahjongTile(19)]
+        self.hand = [MahjongTile(i) for i in range(1, 10)] + [MahjongTile(i) for i in range(28, 32)]
         self.called_tuples = []
-        self.call_tile = MahjongTiles(3)
+        self.call_tile = MahjongTile(3)
 
     def test_extract_features(self):
         self.policy.update_board_state(self.discard_pool, self.hand, self.called_tuples)
@@ -23,7 +23,7 @@ class TestPolicy(unittest.TestCase):
         self.assertEqual(consec_2_count, 8)
         self.assertEqual(alternating_consec_2_count, 7)
         
-        self.hand = [MahjongTiles(i) for i in range(10, 19)] + [MahjongTiles(i) for i in range(28, 32)]
+        self.hand = [MahjongTile(i) for i in range(10, 19)] + [MahjongTile(i) for i in range(28, 32)]
         self.policy.update_board_state(self.discard_pool, self.hand, self.called_tuples)
         existing, hand_existing, dominating_suit, pair_count, consec_2_count, alternating_consec_2_count, pong_kong_count = self.policy.extract_features()
         self.assertIn(dominating_suit, ['m', 'p', 's'])
@@ -31,7 +31,7 @@ class TestPolicy(unittest.TestCase):
         self.assertEqual(consec_2_count, 8)
         self.assertEqual(alternating_consec_2_count, 7)
         
-        self.hand = [MahjongTiles(i) for i in range(19, 28)] + [MahjongTiles(i) for i in range(28, 32)]
+        self.hand = [MahjongTile(i) for i in range(19, 28)] + [MahjongTile(i) for i in range(28, 32)]
         self.policy.update_board_state(self.discard_pool, self.hand, self.called_tuples)
         existing, hand_existing, dominating_suit, pair_count, consec_2_count, alternating_consec_2_count, pong_kong_count = self.policy.extract_features()
         self.assertIn(dominating_suit, ['m', 'p', 's'])
@@ -41,19 +41,19 @@ class TestPolicy(unittest.TestCase):
 
         # 13 Orphans
         self.hand = [
-            MahjongTiles(1),
-            MahjongTiles(9),
-            MahjongTiles(10),
-            MahjongTiles(18),
-            MahjongTiles(19),
-            MahjongTiles(27),
-            MahjongTiles(28),
-            MahjongTiles(29),
-            MahjongTiles(30),
-            MahjongTiles(31),
-            MahjongTiles(32),
-            MahjongTiles(33),
-            MahjongTiles(34)
+            MahjongTile(1),
+            MahjongTile(9),
+            MahjongTile(10),
+            MahjongTile(18),
+            MahjongTile(19),
+            MahjongTile(27),
+            MahjongTile(28),
+            MahjongTile(29),
+            MahjongTile(30),
+            MahjongTile(31),
+            MahjongTile(32),
+            MahjongTile(33),
+            MahjongTile(34)
         ]
         self.policy.update_board_state(self.discard_pool, self.hand, self.called_tuples)
         existing, hand_existing, dominating_suit, pair_count, consec_2_count, alternating_consec_2_count, pong_kong_count = self.policy.extract_features()

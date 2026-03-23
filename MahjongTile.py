@@ -38,7 +38,7 @@ tile_classes = {
 }
 
 
-class MahjongTiles(pygame.sprite.Sprite):
+class MahjongTile(pygame.sprite.Sprite):
     def __init__(self, classId: int, init_pos = (0,0)):
         pygame.sprite.Sprite.__init__(self)
         self.classId = classId
