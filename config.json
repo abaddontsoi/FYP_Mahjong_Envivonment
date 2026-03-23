@@ -1,0 +1,6 @@
+{
+    "heuristic_bot_count": 2,
+    "model_bot_count": 2,
+    "human_count": 0,
+    "game_log_location": "raw_logs"
+}

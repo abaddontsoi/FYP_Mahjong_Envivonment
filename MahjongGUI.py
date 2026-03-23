@@ -6,7 +6,7 @@ from BotPlayerGUI import BotPlayerGUI
 from ModelPlayerGUI import ModelPlayerGUI
 import MahjongGUIEnv
 import time
-import os
+import json 
 
 # Color constants
 WHITE = (255, 255, 255)
@@ -25,20 +25,48 @@ class MahjongGUI:
         self.clock = pygame.time.Clock()
         self.running = True
         self.game_env = MahjongGUIEnv.MahjongGUIEnv(real_player=True)
-        self.game_env.assign_game_loop(self)
         self.sprites = pygame.sprite.Group()
         self.ui_sprites = pygame.sprite.LayeredUpdates()
+        self.has_human = False
 
     def run(self):
-        # Add players
-        players = [
-            BotPlayerGUI('Bot1'),
-            BotPlayerGUI('Bot2'),
-            BotPlayerGUI('Bot3'),
-            BotPlayerGUI('ModelBot'),
-            # PlayerGUI('You')
-        ]
-        players[-1].assign_policy(ModelPolicy())  # Assign model-based policy to each bot player
+        # Search for config.json
+        config_path = "config.json"
+
+        players = []
+        heuristic_bot_count = 0
+        model_bot_count = 0
+        human_count = 0
+        game_log_location = None
+        
+        # Ensure file existance
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                config = json.load(f)
+            
+            heuristic_bot_count = config.get("heuristic_bot_count", 0)
+            model_bot_count = config.get("model_bot_count", 0)
+            human_count = config.get("human_count", 0)
+            game_log_location = config.get("game_log_location", "raw_logs")
+            
+            # Ensure total player count is 4
+            if heuristic_bot_count + model_bot_count + human_count != 4:
+                raise ValueError("Total player count must be 4. Please check your config.json.")
+        else:
+            raise FileNotFoundError("config.json not found. Please create a config.json file with the following format: {\"heuristic_bot_count\": 3, \"model_bot_count\": 1, \"human_count\": 0}")
+
+
+        heuristic_bots = [BotPlayerGUI(f'HeuristicBot{i+1}') for i in range(heuristic_bot_count)]
+
+        model_bots = [ModelPlayerGUI(f'ModelBot{i+1}') for i in range(model_bot_count)]
+        for bot in model_bots:
+            bot.assign_policy(ModelPolicy())
+
+        players = heuristic_bots + model_bots
+        if human_count > 0:
+            for i in range(human_count):
+                players.append(PlayerGUI(f'HumanPlayer{i+1}'))
+                self.has_human = True
         
         self.game_env.add_players(players) 
         # Assign game environment to players
@@ -65,15 +93,16 @@ class MahjongGUI:
                     
                     self.game_env.update_game_state()
                     self.render()
-                    self.clock.tick(10)
+                    self.clock.tick(120)
         log = self.game_env.log
-        os.makedirs('raw_logs', exist_ok=True)
-        import json
+
+        os.makedirs(game_log_location, exist_ok=True)
+
         tstamp = int(time.time())
-        with open(os.path.join('raw_logs/', f'game_log_{tstamp}.json') , 'w') as f:
+        with open(os.path.join(game_log_location, f'game_log_{tstamp}.json') , 'w') as f:
             json.dump(log, f, indent=4)
         if self.game_env.winning_log:
-            with open(os.path.join('raw_logs/', f'winning_log_{tstamp}.json') , 'w') as f:
+            with open(os.path.join(game_log_location, f'winning_log_{tstamp}.json') , 'w') as f:
                 json.dump(self.game_env.winning_log, f, indent=4)
 
         pygame.quit()
@@ -103,11 +132,16 @@ class MahjongGUI:
 
         # Player hand display
         players = screen_items['players']
-        for idx, player in enumerate(players):
-            # if player.__class__ == PlayerGUI and player.__class__ != BotPlayerGUI:
-            for tile in player.hand:
-                self.sprites.add(tile)
-        
+        if self.has_human:
+            for idx, player in enumerate(players):
+                if player.__class__ == PlayerGUI:
+                    for tile in player.hand:
+                        self.sprites.add(tile)
+        else:
+            for player in players:
+                for tile in player.hand:
+                    self.sprites.add(tile)
+
         # Player called tuples display
         players_called_tuples = screen_items['players_called_tuples']
         for idx, called_tuples in enumerate(players_called_tuples):

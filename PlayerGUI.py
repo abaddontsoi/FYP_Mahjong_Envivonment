@@ -48,18 +48,6 @@ class PlayerGUI:
     def check_tuple_type(self, tuple: tuple[MahjongTile.MahjongTile]):
         return check_tuple_type(tuple)
 
-    def safe_get_option(self, options: list, prompt: str):
-        while True:
-            try:
-                idx = int(input(prompt))
-                if idx >= len(options):
-                    raise IndexError("Index out of range.")
-                return options.pop(idx)
-            except ValueError:
-                print("Invalid input, try again.")
-            except IndexError:
-                print("Index out of range, try again.")
-
     def clear_hand(self):
         self.hand = []
         self.called_tuples = []
@@ -294,13 +282,6 @@ class PlayerGUI:
             actions.append('pass')
         
         return actions
-    
-    def self_drawn(self):
-        options = ['self drawn', 'pass']
-        if self.check_win():
-            result = self.safe_get_option(options, f"{options}: ")
-            return result == 'self drawn'
-        return False
             
     def kong(self, call_tile: MahjongTile.MahjongTile):
         call_tile_id = call_tile.classId

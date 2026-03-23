@@ -1,5 +1,6 @@
 import random
 import MahjongTile
+from ModelPlayerGUI import ModelPlayerGUI
 from PlayerGUI import PlayerGUI
 from BotPlayerGUI import BotPlayerGUI
 import pygame
@@ -23,14 +24,10 @@ game_states = [
 
 class MahjongGUIEnv:
     def __init__(self, real_player = True):
-        # Main game loop
-        self.game_loop = None
-
         self.deck = []
         self.wind = -1
         self.round = -1
         self.players = []
-        self.real_player = real_player
         self.end_round = False
         self.end_game = False
         self.current_player = 0
@@ -73,9 +70,6 @@ class MahjongGUIEnv:
         # winning faan + score
         # win from/self drawn
         self.winning_log = []
-
-    def assign_game_loop(self, game_loop):
-        self.game_loop = game_loop
 
     def generate_tiles(self):
         # Clear deck
@@ -159,7 +153,7 @@ class MahjongGUIEnv:
         if self.game_state == 'checking_on_draw_action':
             # Check for self-drawn winning/additional kong/hidden kong action
             on_draw_actions = self.players[self.current_player].check_on_draw_action()
-            if on_draw_actions and self.players[self.current_player].__class__ is PlayerGUI:
+            if on_draw_actions:
                 self.current_player_on_draw_actions = on_draw_actions
                 print(f"Player {self.players[self.current_player].id} on draw actions: {self.current_player_on_draw_actions}")
                 self.game_state = 'player_take_on_draw_action'
@@ -170,7 +164,7 @@ class MahjongGUIEnv:
             # Create action buttons for the player
             action_player = self.current_player
             current_player = self.players[action_player]
-            if self.players[action_player].__class__ is BotPlayerGUI:
+            if type(self.players[action_player]) is BotPlayerGUI or type(self.players[action_player]) is ModelPlayerGUI:
                 chosen_action = None                
                 # Handle action
                 if chosen_action == 'self_drawn':
@@ -197,16 +191,19 @@ class MahjongGUIEnv:
                     self.game_state = 'ending_round'
                 elif chosen_action == 'additional_kong':
                     self.players[action_player].additional_kong()
-                    # Draw 1 tile
-                    self.players[action_player].draw_tiles([self.deck.pop(0)])
-                    self.game_state = 'checking_on_draw_action'
+                    self.players[action_player].faan_calculator.consecutive_kong_count += 1
+                    self.current_player = action_player
+                    self.game_state = 'player_drawing_from_deck' # Additional Kong needs to draw an additional tile
+                    self.current_player_on_draw_actions = []
                 elif chosen_action == 'hidden_kong':
                     self.players[action_player].hidden_kong()
-                    # Draw 1 tile
-                    self.players[action_player].draw_tiles([self.deck.pop(0)])
-                    self.game_state = 'checking_on_draw_action'
+                    self.players[action_player].faan_calculator.consecutive_kong_count += 1
+                    self.current_player = action_player
+                    self.game_state = 'player_drawing_from_deck' # Hidden Kong needs to draw an additional tile
+                    self.current_player_on_draw_actions = []
                 else:
                     self.game_state = 'waiting_discard'
+                    self.current_player_on_draw_actions = []
             elif self.event_buffer is not None and self.event_buffer.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = self.event_buffer.pos
                 current_player = self.players[action_player]
@@ -264,10 +261,10 @@ class MahjongGUIEnv:
                             current_player.additional_kong()
                             call_tuples_before = current_player.called_tuples.copy()
                             hand_before_discard = current_player.hand.copy()
-                            # Draw 1 tile
-                            current_player.draw_tiles([self.deck.pop(0)])
+                            self.players[action_player].faan_calculator.consecutive_kong_count += 1
+                            self.current_player = action_player
+                            self.game_state = 'player_drawing_from_deck' # Hidden Kong needs to draw an additional tile
                             self.current_player_on_draw_actions = []
-                            self.game_state = 'waiting_discard'
                             self.log.append({
                                 'player_id': current_player.id,
                                 'current_wind': self.wind,
@@ -283,17 +280,18 @@ class MahjongGUIEnv:
                             })
                         elif chosen_action == 'hidden_kong':
                             current_player.hidden_kong()
-                            # Draw 1 tile
-                            current_player.draw_tiles([self.deck.pop(0)])
+                            call_tuples_before = current_player.called_tuples.copy()
+                            hand_before_discard = current_player.hand.copy()
+                            self.players[action_player].faan_calculator.consecutive_kong_count += 1
+                            self.current_player = action_player
+                            self.game_state = 'player_drawing_from_deck' # Hidden Kong needs to draw an additional tile
                             self.current_player_on_draw_actions = []
-                            self.game_state = 'waiting_discard'
                             self.log.append({
                                 'player_id': current_player.id,
                                 'current_wind': self.wind,
                                 'round_position': current_player.round_position,
-                                'hand': [tile.classId for tile in current_player.hand],
-                                'called_tuples': [[tile.classId for tile in tup] for tup in current_player.called_tuples],
-                                'action': 'hidden_kong',
+                                'hand': [tile.classId for tile in hand_before_discard],
+                                'called_tuples': [[tile.classId for tile in tup] for tup in call_tuples_before],                                'action': 'hidden_kong',
                                 'action_tile': None,
                                 'discard_pool': [tile.classId for tile in self.discard_pool],
                                 'opposite_player_called_tuples': [[tile.classId for tile in tup] for tup in self.players[(self.current_player + 2) %4].called_tuples],
@@ -328,7 +326,7 @@ class MahjongGUIEnv:
             # Check clicking event from event buffer
             # See if it is on any tile of current player's hand
             action_player = self.current_player
-            if type(self.players[action_player]) == BotPlayerGUI:
+            if type(self.players[action_player]) == BotPlayerGUI or type(self.players[action_player]) == ModelPlayerGUI:
                 hand_before_discard = [tile.classId for tile in self.players[action_player].hand]
                 call_tuples_before = self.players[action_player].called_tuples.copy()
                 self.discard_buffer = self.players[action_player].discard()
@@ -430,7 +428,7 @@ class MahjongGUIEnv:
             else:
                 for i in range(1, 4):
                     action_player = (self.current_player + i) % 4
-                    if self.players[action_player].__class__ is BotPlayerGUI:
+                    if type(self.players[action_player]) is BotPlayerGUI or type(self.players[action_player]) is ModelPlayerGUI:
                         if not self.call_actions[i-1]:
                             # No action, skip
                             continue
@@ -568,10 +566,9 @@ class MahjongGUIEnv:
                 action_player = self.call_queue['kong'][0]
                 hand_before_discard = self.players[action_player].hand.copy()
                 call_tuples_before = self.players[action_player].called_tuples.copy()
+                self.players[action_player].faan_calculator.consecutive_kong_count += 1
                 self.players[action_player].kong(self.discard_buffer)
                 print(f"Player {self.players[action_player].id} declared kong.")
-                # Draw 1 tile
-                self.players[action_player].draw_tiles([self.deck.pop(0)])
                 self.current_player = action_player
                 self.log.append({
                     'player_id': self.players[action_player].id,
@@ -588,7 +585,8 @@ class MahjongGUIEnv:
                 })
                 self.event_buffer = None
                 self.discard_buffer = None 
-                self.game_state = 'waiting_discard'
+                self.current_player = action_player
+                self.game_state = 'player_drawing_from_deck' # Kong needs to draw an additional tile
             elif self.call_queue['pong']:
                 action_player = self.call_queue['pong'][0]
                 hand_before_discard = self.players[action_player].hand.copy()
@@ -760,7 +758,7 @@ class MahjongGUIEnv:
         # Create action buttons for each player based on call_actions
         for idx, actions in enumerate(self.call_actions):
             action_player = (self.current_player + idx + 1) % 4
-            if self.players[action_player].__class__ is BotPlayerGUI:
+            if type(self.players[action_player]) is BotPlayerGUI or type(self.players[action_player]) is ModelPlayerGUI:
                 self.screen_items['player_action_buttons'].append([])
                 continue
             # Position: Right of hand, below tiles
